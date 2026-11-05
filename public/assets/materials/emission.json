@@ -1,0 +1,94 @@
+{
+ "blend": "emission.blend",
+ "materials": {
+  "SPR_Material_Emission": {
+   "custom_properties": {
+    "simple_renderer_material_template_version": "1",
+    "simple_renderer_material_id": "emission"
+   },
+   "blend_method": "HASHED",
+   "trees": {
+    "Shader Nodetree": {
+     "nodes": [
+      {
+       "name": "SPR User Color",
+       "label": "Browser protein colour",
+       "type": "ShaderNodeRGB",
+       "inputs": {},
+       "properties": {}
+      },
+      {
+       "name": "Material Output",
+       "label": "",
+       "type": "ShaderNodeOutputMaterial",
+       "inputs": {
+        "0:Surface": {
+         "value": null,
+         "linked": true
+        },
+        "1:Volume": {
+         "value": null,
+         "linked": false
+        },
+        "2:Displacement": {
+         "value": [
+          0.0,
+          0.0,
+          0.0
+         ],
+         "linked": false
+        },
+        "3:Thickness": {
+         "value": 0.0,
+         "linked": false
+        }
+       },
+       "properties": {
+        "target": "ALL"
+       }
+      },
+      {
+       "name": "Emission",
+       "label": "",
+       "type": "ShaderNodeEmission",
+       "inputs": {
+        "0:Color": {
+         "value": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+         ],
+         "linked": true
+        },
+        "1:Strength": {
+         "value": 3.0,
+         "linked": false
+        },
+        "2:Weight": {
+         "value": 0.0,
+         "linked": false
+        }
+       },
+       "properties": {}
+      }
+     ],
+     "links": [
+      {
+       "from_node": "SPR User Color",
+       "from_socket": "Color",
+       "to_node": "Emission",
+       "to_socket": "Color"
+      },
+      {
+       "from_node": "Emission",
+       "from_socket": "Emission",
+       "to_node": "Material Output",
+       "to_socket": "Surface"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,189 @@
+{
+ "blend": "base_scene.blend",
+ "world": "ProteinWorld",
+ "world_trees": {
+  "Shader Nodetree": {
+   "nodes": [
+    {
+     "name": "Texture Coordinate",
+     "label": "World-locked coordinates",
+     "type": "ShaderNodeTexCoord",
+     "inputs": {},
+     "properties": {}
+    },
+    {
+     "name": "Mapping",
+     "label": "Author HDRI rotation here",
+     "type": "ShaderNodeMapping",
+     "inputs": {
+      "0:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      },
+      "1:Location": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "2:Rotation": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "3:Scale": {
+       "value": [
+        1.0,
+        1.0,
+        1.0
+       ],
+       "linked": false
+      }
+     },
+     "properties": {
+      "vector_type": "POINT"
+     }
+    },
+    {
+     "name": "Environment Texture",
+     "label": "",
+     "type": "ShaderNodeTexEnvironment",
+     "inputs": {
+      "0:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      }
+     },
+     "properties": {
+      "interpolation": "Linear",
+      "projection": "EQUIRECTANGULAR"
+     },
+     "image": {
+      "name": "studio.exr",
+      "size": [
+       1024,
+       512
+      ],
+      "colorspace": "Linear Rec.709",
+      "source": "FILE"
+     }
+    },
+    {
+     "name": "Background",
+     "label": "Author World strength here",
+     "type": "ShaderNodeBackground",
+     "inputs": {
+      "0:Color": {
+       "value": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+       ],
+       "linked": true
+      },
+      "1:Strength": {
+       "value": 0.699999988079071,
+       "linked": false
+      },
+      "2:Weight": {
+       "value": 0.0,
+       "linked": false
+      }
+     },
+     "properties": {}
+    },
+    {
+     "name": "World Output",
+     "label": "",
+     "type": "ShaderNodeOutputWorld",
+     "inputs": {
+      "0:Surface": {
+       "value": null,
+       "linked": true
+      },
+      "1:Volume": {
+       "value": null,
+       "linked": false
+      }
+     },
+     "properties": {
+      "target": "ALL"
+     }
+    }
+   ],
+   "links": [
+    {
+     "from_node": "Texture Coordinate",
+     "from_socket": "Generated",
+     "to_node": "Mapping",
+     "to_socket": "Vector"
+    },
+    {
+     "from_node": "Mapping",
+     "from_socket": "Vector",
+     "to_node": "Environment Texture",
+     "to_socket": "Vector"
+    },
+    {
+     "from_node": "Environment Texture",
+     "from_socket": "Color",
+     "to_node": "Background",
+     "to_socket": "Color"
+    },
+    {
+     "from_node": "Background",
+     "from_socket": "Background",
+     "to_node": "World Output",
+     "to_socket": "Surface"
+    }
+   ]
+  }
+ },
+ "view_settings": {
+  "view_transform": "Filmic",
+  "look": "Very High Contrast",
+  "exposure": 0.0,
+  "gamma": 1.0,
+  "display_device": "sRGB"
+ },
+ "render": {
+  "engine": "CYCLES",
+  "resolution": [
+   1024,
+   1024
+  ],
+  "samples": 128,
+  "film_transparent": true
+ },
+ "custom_properties": {
+  "simple_renderer_lighting_preset": "base_hdri"
+ },
+ "environment": {
+  "node": "Environment Texture",
+  "image": "studio.exr",
+  "original_size": [
+   1024,
+   512
+  ],
+  "colorspace": "Linear Rec.709",
+  "exported": "base_scene.hdr",
+  "exported_size": [
+   1024,
+   512
+  ]
+ }
+}

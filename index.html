@@ -1,0 +1,1894 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Every script, style and worker is the page's own file, but for Cloudflare's Web Analytics
+      beacon, which the host injects and which reports to this origin's `/cdn-cgi/rum`. The page
+      fetches only from itself and the two archives it downloads structures from, so a session
+      document can name no other host.
+      `blob:` is the renders, shown and read back by `fetch()`; `data:` is the favicon and Mol*'s
+      built-in textures. The host's headers send the same policy plus `frame-ancestors`, which a
+      meta element cannot carry; the browser enforces both.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' https://static.cloudflareinsights.com; worker-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' blob: https://files.rcsb.org https://alphafold.ebi.ac.uk; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" href="data:," />
+    <!--
+      The sheet is linked here rather than imported from `src/main.js`. Vite processes a
+      `<link rel="stylesheet">` in the entry HTML exactly as it processes the import, and one route
+      in is what stops it being loaded twice.
+    -->
+    <link rel="stylesheet" href="/styles.css" />
+    <title>FoldRay</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-app">
+          <a class="brand" href="/home/" title="The FoldRay website">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-wordmark" role="img" aria-label="FoldRay"></span>
+            <span id="app-version" class="brand-version"></span>
+          </a>
+          <a id="home-link" class="topbar-home" href="/home/" title="The FoldRay website: gallery and guide">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 1.2 7.4l.9 1.1 1.1-.9V14h3.9v-4h1.8v4h3.9V7.6l1.1.9.9-1.1Z" /></svg>
+            Home
+          </a>
+
+          <details class="menu">
+            <summary id="file-menu-toggle">File</summary>
+            <div class="menu-panel">
+              <section class="source-panel" aria-labelledby="source-heading">
+                <h2 id="source-heading">Load a structure</h2>
+                <div class="source-actions">
+                  <form id="pdb-load-form" class="pdb-control">
+                    <label>
+                      <span>PDB ID</span>
+                      <input
+                        id="pdb-id"
+                        type="text"
+                        placeholder="4HHB"
+                        maxlength="4"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                        aria-describedby="load-status"
+                        disabled
+                      />
+                    </label>
+                    <button id="load-pdb" type="submit" disabled>Load from PDB</button>
+                  </form>
+                  <form id="alphafold-load-form" class="pdb-control">
+                    <label>
+                      <span>UniProt</span>
+                      <input
+                        id="alphafold-id"
+                        type="text"
+                        placeholder="P69905"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                        aria-describedby="load-status"
+                        disabled
+                      />
+                    </label>
+                    <button id="load-alphafold" type="submit" disabled>Load from AlphaFold</button>
+                  </form>
+                  <!--
+                    The native file input is the one control in the app with no styling of its
+                    own, so it is hidden the way #session-file already is and driven by a real
+                    button. It stays in the DOM because launcher.js writes its `.files` for
+                    drag-and-drop, and it is hidden with .visually-hidden rather than [hidden]:
+                    setSourceControlsDisabled() still owns whether it can be used.
+                  -->
+                  <!--
+                    A saved session is accepted here too: the picked file goes through
+                    launcher.js's routeFile(), which hands a session to #session-file and leaves a
+                    structure on this input. One router, so the accept list and the three
+                    extensions session-format.js declares cannot drift apart.
+                  -->
+                  <div class="file-control">
+                    <input id="structure-file" type="file" accept=".cif,.pdb,.cif.gz,.pdb.gz,.gz,.foldray,.rendersession,.sprsession,.json" class="visually-hidden" disabled />
+                    <button id="structure-file-browse" type="button" disabled>
+                      Choose a structure or session…
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <!--
+                Which molecule the loaded file means. A structure-level fact rather than a protein
+                style, so it lives beside the thing that loaded it and not in the representation
+                card - and a real <select>, which is why it is here and could never be in the
+                Styles overlay, where nothing may be a form control.
+
+                Populated at load from the file's own `pdbx_struct_assembly`, and disabled when the
+                file declares none: an entry with no operators has one molecule and offering a
+                choice between it and itself is a control that says nothing.
+              -->
+              <section class="source-panel" aria-labelledby="molecule-heading">
+                <h2 id="molecule-heading">Molecule</h2>
+                <div class="source-actions">
+                  <label>
+                    <span>Build</span>
+                    <select id="structure-assembly" disabled>
+                      <option value="">Asymmetric unit</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <!--
+                Session management is not structure loading, so it is not announced under "Load a
+                structure". Same panel, its own heading.
+              -->
+              <section class="source-panel" aria-labelledby="session-heading">
+                <h2 id="session-heading">Session</h2>
+                <div class="source-actions">
+                  <div class="session-actions" aria-label="Session file actions">
+                    <input
+                      id="session-file"
+                      type="file"
+                      accept=".foldray,.rendersession,.sprsession,.json,application/json"
+                      hidden
+                      disabled
+                    />
+                    <button id="load-session" type="button" disabled>Open session…</button>
+                    <button id="save-session" type="button" disabled>Save session as…</button>
+                    <button id="copy-share-link" type="button" disabled>Copy link</button>
+                    <button id="new-session" type="button" disabled>New session</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </details>
+
+          <!--
+            Undo, redo and their settings-only variants. The top bar is a deliberate choice of home:
+            these sit outside `#style-controls`, `#selection-panel` and `#camera-render-settings`,
+            so the bulk disable in setRenderControlsDisabled() cannot reach them and main.js names
+            all four by hand — and outside the stage column, so they can never take a row from the
+            live canvas. Buttons only, like every other stage control: an <input> here would mark
+            the session unsaved through the capture-phase change/input listener on `.app-shell`
+            merely by being used to step through history.
+          -->
+          <div class="history-actions" role="group" aria-label="Edit history">
+            <button
+              id="history-undo"
+              type="button"
+              aria-label="Undo"
+              title="Undo (Ctrl+Z): steps back through every setting, and the camera with them"
+              disabled
+            >&#x21b6;</button>
+            <button
+              id="history-redo"
+              type="button"
+              aria-label="Redo"
+              title="Redo (Ctrl+Shift+Z or Ctrl+Y)"
+              disabled
+            >&#x21b7;</button>
+            <button
+              id="history-undo-settings"
+              type="button"
+              aria-label="Undo settings only, keeping the current camera"
+              title="Undo settings only (Ctrl+Alt+Z): reverts materials, lighting and layers but leaves the camera where it is"
+              disabled
+            >&#x21b6;<span class="history-settings-tag">camera kept</span></button>
+            <button
+              id="history-redo-settings"
+              type="button"
+              aria-label="Redo settings only, keeping the current camera"
+              title="Redo settings only (Ctrl+Alt+Shift+Z or Ctrl+Alt+Y): reapplies materials, lighting and layers but leaves the camera where it is"
+              disabled
+            >&#x21b7;<span class="history-settings-tag">camera kept</span></button>
+          </div>
+
+          <!--
+            The page's one status line -- what loaded, what a click picked, why a save failed -- and
+            it lives in the top bar rather than in a band of its own: a shelf spanning the window is
+            a row the stage pays for and is empty most of the time. One row of chrome, one line of
+            status: it clips to a single line with an ellipsis, and `setLoadStatus()` hangs the
+            whole message off `data-full` so hovering (or tabbing to) the line shows it in a box.
+            The box is offered **only when the line is actually clipped** -- `is-clipped` is set by
+            measuring `scrollWidth`, never guessed from the length -- because a tooltip that
+            repeats what is already on screen teaches people to ignore tooltips.
+          -->
+          <div class="topbar-status" tabindex="0">
+            <p id="load-status" class="status source-status" role="status" aria-live="polite">
+              Starting…
+            </p>
+          </div>
+
+          <span class="topbar-spacer"></span>
+          <span class="session-chip">
+            <b id="session-name" class="session-name">Untitled</b>
+            <span id="session-state" class="session-state" role="status" aria-live="polite">
+              No structure
+            </span>
+          </span>
+          <a id="feedback-link" href="https://tally.so/r/q401Yk?from=app" target="_blank" rel="noopener">Feedback</a>
+          <a id="submit-link" href="https://tally.so/r/QKPlxk?from=app" target="_blank" rel="noopener">Submit</a>
+          <!--
+            The licence and the attributions are an obligation from the first build rather than a
+            launch checklist item, and they have to be reachable from the UI. They are the website's
+            Licence & Attributions page, which carries `LICENSE` and `docs/attributions.md` and links
+            `THIRD-PARTY-NOTICES.txt`. A new tab, so a session in progress stays open. There is no footer, so it
+            lands at the end of the top bar.
+          -->
+          <a id="licence-link" href="https://www.foldray.org/home/#licence" target="_blank" rel="noopener">Licence &amp; attributions</a>
+
+          <!--
+            Tell someone they cannot render before they have invested ten minutes.
+
+            Authored here, and **moved at runtime**: `src/opening-screen.js` takes this node into
+            its own panel, beside the accession box, which is where a refusal has to be read. It
+            stays in the markup because a page whose opening screen could not be built still has to
+            say why, and the top bar is where it says it.
+
+            `src/main.js`'s `refusal()` writes both lines and is the page's one answer: it
+            distinguishes "this browser has no WebGPU" from "this origin is not a secure context",
+            naming the origin when that is the cause -- blaming the browser for the origin sends
+            people to reinstall Chrome.
+          -->
+          <div id="unsupported" hidden>
+            <h2 id="unsupported-title">This browser cannot render here</h2>
+            <p id="unsupported-detail"></p>
+          </div>
+        </div>
+      </header>
+
+      <div class="rail">
+        <section id="style-controls" class="rail-group" aria-labelledby="style-heading">
+          <h2 id="style-heading" class="visually-hidden">Base appearance</h2>
+
+          <details class="rail-card" open>
+            <summary>Protein</summary>
+            <div class="rail-body">
+              <div class="style-fields">
+                <div class="picker-field" data-picker="representation">
+                  <span class="picker-caption">Representation</span>
+                  <select id="representation" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                    <optgroup label="Current">
+                      <option value="cartoon">Cartoon</option>
+                      <option value="ball_and_stick_refined">Ball &amp; stick</option>
+                      <option value="surface">Surface</option>
+                      <option value="spheres_refined">Spheres</option>
+                      <option value="sticks">Sticks</option>
+                      <option value="ribbon">Ribbon</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div id="cartoon-type-control" class="picker-field" data-picker="cartoon-type" hidden>
+                  <span class="picker-caption">Type</span>
+                  <select id="cartoon-type" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                    <option value="railed" selected>Railed</option>
+                    <option value="classic">Classic</option>
+                    <option value="chonky">Chonky</option>
+                    <option value="railed_blend">Railed tapered</option>
+                    <option value="railed_chonky">Railed chonky</option>
+                    <option value="geometric">Cylindrical</option>
+                    <option value="cords">Cords</option>
+                    <option value="lowpoly">Low poly</option>
+                  </select>
+                </div>
+                <div id="ribbon-type-control" class="picker-field" data-picker="ribbon-type" hidden>
+                  <span class="picker-caption">Type</span>
+                  <select id="ribbon-type" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                    <option value="standard">Standard</option>
+                    <option value="slender">Slender</option>
+                    <option value="tape">Tape</option>
+                  </select>
+                </div>
+                <div id="atom-scope-control" class="picker-field" data-picker="atom-scope" hidden>
+                  <span class="picker-caption">Atoms</span>
+                  <select id="atom-scope" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                    <option value="all">All atoms</option>
+                    <option value="sidechains">Side chains</option>
+                  </select>
+                </div>
+                <div id="surface-detail-control" class="picker-field" data-picker="surface-detail" hidden>
+                  <span class="picker-caption">Level of detail</span>
+                  <select id="surface-detail" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                    <option value="1">Level 1</option>
+                    <option value="2">Level 2</option>
+                    <option value="3">Level 3</option>
+                    <option value="4">Level 4</option>
+                  </select>
+                </div>
+                <div class="picker-field" data-picker="material">
+                  <span class="picker-caption">Material</span>
+                  <select id="material" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                    <optgroup label="Current">
+                      <option value="diffuse">Diffuse</option>
+                      <option value="glossy">Glossy</option>
+                      <option value="soft_glossy">Soft glossy</option>
+                      <option value="satin">Satin</option>
+                      <option value="translucent_context">Translucent</option>
+                      <option value="glass">Glass</option>
+                      <option value="emission">Emission</option>
+                      <option value="bioluminescent">Bioluminescent</option>
+                      <option value="chrome">Chrome</option>
+                      <option value="metallic">Metal</option>
+                      <option value="jelly">Jelly</option>
+                      <option value="ceramic">Ceramic</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <label>
+                  <span>Colour</span>
+                  <select id="protein-color-mode">
+                    <option value="uniform">Uniform</option>
+                    <option value="element">By element</option>
+                    <option value="chain">By chain</option>
+                    <option value="sequence">N → C gradient</option>
+                    <option value="x_axis">X-axis gradient</option>
+                    <option value="y_axis">Y-axis gradient</option>
+                    <option value="z_axis">Z-axis gradient</option>
+                  </select>
+                </label>
+                <p id="protein-color-capability" class="range-help" hidden></p>
+              </div>
+              <fieldset id="color-control" class="color-control">
+                <legend>Uniform colour</legend>
+                <div id="color-presets" class="color-presets" aria-label="Colour presets"></div>
+                <div class="custom-color">
+                  <input id="color-wheel" type="color" value="#58bfa8" aria-label="Choose any colour" />
+                  <input
+                    id="color-hex"
+                    type="text"
+                    value="#58BFA8"
+                    maxlength="7"
+                    spellcheck="false"
+                    aria-label="Protein colour hex value"
+                  />
+                </div>
+              </fieldset>
+              <fieldset id="protein-gradient-control" class="gradient-control" hidden>
+                <legend>Gradient colours</legend>
+                <div class="gradient-endpoint-sources" hidden>
+                  <span>
+                    <input id="protein-gradient-start-wheel" type="color" value="#176fd3" />
+                    <input id="protein-gradient-start-hex" type="text" value="#176FD3" maxlength="7" />
+                  </span>
+                  <span>
+                    <input id="protein-gradient-end-wheel" type="color" value="#e2b84b" />
+                    <input id="protein-gradient-end-hex" type="text" value="#E2B84B" maxlength="7" />
+                  </span>
+                </div>
+                <div id="protein-gradient-midpoints" class="gradient-colors"></div>
+                <div class="gradient-footer">
+                  <button id="protein-gradient-add-color" class="gradient-add-color" type="button">+ Add colour</button>
+                  <p id="protein-gradient-count" class="range-help gradient-count">2 of 5 colours</p>
+                </div>
+              </fieldset>
+              <div id="protein-category-colors" class="category-colors" hidden></div>
+              <!--
+                Outside `.style-fields`, so it is the last thing above Advanced settings rather
+                than the fourth picker down. It needs no class of its own at this depth --
+                `.rail-body label` and `.rail-body select` are what style it, and being a grid item
+                of `.rail-body` is what puts it on the same 12px rhythm as the colour fieldsets
+                above it. `main.js` owns the `hidden`, which is `!structureFile`.
+              -->
+              <div id="secondary-structure-control" hidden>
+                <label>
+                  <span>Secondary structure</span>
+                  <select id="secondary-structure-method">
+                    <!-- The text says which of `auto`'s three methods answered, once a structure is loaded;
+                         `main.js` writes it from `SECONDARY_STRUCTURE_AUTO_LABELS`. The value never moves. -->
+                    <option value="auto" selected>Automatic</option>
+                    <option value="model">From the file's own records</option>
+                    <option value="dssp">DSSP</option>
+                    <option value="zhang-skolnick">Zhang–Skolnick</option>
+                  </select>
+                </label>
+              </div>
+              <details class="advanced-options">
+                <summary>Advanced settings</summary>
+                <!-- The representation geometry panel is built from the look's authored numbers. -->
+                <fieldset id="protein-representation-settings" class="cartoon-settings" hidden>
+                  <legend>Representation geometry</legend>
+                  <div id="protein-representation-settings-grid" class="cartoon-settings-grid"></div>
+                  <p id="protein-representation-settings-help" class="range-help"></p>
+                </fieldset>
+                <fieldset id="protein-emission-control" class="advanced-group" hidden>
+                  <legend>Emission</legend>
+                  <label class="emission-strength-control">
+                    <span class="range-caption"><span>Emission strength</span><output id="protein-emission-value">3.5</output></span>
+                    <input id="protein-emission-strength" type="range" min="0" max="20" step="0.5" value="3.5" />
+                  </label>
+                </fieldset>
+                <fieldset class="advanced-group">
+                  <legend>Transparency</legend>
+                  <label class="opacity-control">
+                    <span class="range-caption">
+                      <span>Opacity</span>
+                      <output id="protein-opacity-value" for="protein-opacity">1</output>
+                    </span>
+                    <input
+                      id="protein-opacity"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value="1"
+                      aria-label="Protein material opacity"
+                    />
+                    <span class="range-help">0 transparent · 1 opaque</span>
+                  </label>
+                </fieldset>
+              </details>
+            </div>
+          </details>
+
+          <details class="rail-card">
+            <summary>Components</summary>
+            <div class="rail-body rail-body-stacked">
+              <fieldset id="nucleic-style-control" class="component-style">
+                <legend>Nucleic acids</legend>
+                <label class="component-toggle">
+                  <input id="nucleic-enabled" type="checkbox" checked />
+                  <span>Include in render</span>
+                </label>
+                <p class="range-help" id="nucleic-kind" hidden></p>
+                <p class="range-help component-absent" id="nucleic-absent" hidden>This structure has no DNA or RNA.</p>
+                <div class="style-fields component-fields" data-component-detail hidden>
+                  <div class="picker-field" data-picker="nucleic-representation">
+                    <span class="picker-caption">Representation</span>
+                    <select id="nucleic-representation" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                      <option value="nucleic_blocks">Blocks</option>
+                      <option value="nucleic_rings">Rings</option>
+                      <option value="nucleic_cartoon">Tape</option>
+                      <option value="nucleic_ribbon">Ribbon</option>
+                      <option value="nucleic_ball_and_stick">Ball &amp; stick</option>
+                      <option value="nucleic_sticks">Sticks</option>
+                      <option value="nucleic_spheres">Spheres</option>
+                      <option value="nucleic_surface">Surface</option>
+                    </select>
+                  </div>
+                  <div class="picker-field" data-picker="material">
+                    <span class="picker-caption">Material</span>
+                    <select id="nucleic-material" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                      <option value="diffuse">Diffuse</option>
+                      <option value="glossy">Glossy</option>
+                      <option value="glass">Glass</option>
+                      <option value="emission">Emission</option>
+                      <option value="satin">Satin</option>
+                      <option value="soft_glossy">Soft glossy</option>
+                      <option value="translucent_context">Translucent</option>
+                      <option value="bioluminescent">Bioluminescent</option>
+                      <option value="chrome">Chrome</option>
+                      <option value="metallic">Metal</option>
+                      <option value="jelly">Jelly</option>
+                      <option value="ceramic">Ceramic</option>
+                    </select>
+                  </div>
+                  <label>
+                    <span>Colour</span>
+                    <select id="nucleic-color-mode">
+                      <option value="nucleic_base">By base</option>
+                      <option value="nucleic_part">By phosphate / sugar / base</option>
+                      <option value="chain">By strand</option>
+                      <option value="sequence">5′ → 3′ gradient</option>
+                      <option value="nucleic_duplex">Along duplex</option>
+                      <option value="element">By element</option>
+                      <option value="uniform">Uniform</option>
+                    </select>
+                  </label>
+                  <label class="component-uniform-color" hidden>
+                    <span>Uniform colour</span>
+                    <span class="component-color-inputs">
+                      <input
+                        id="nucleic-color-wheel"
+                        type="color"
+                        value="#8a51c2"
+                        aria-label="Nucleic acid uniform colour"
+                      />
+                      <input
+                        id="nucleic-color-hex"
+                        type="text"
+                        value="#8A51C2"
+                        maxlength="7"
+                        spellcheck="false"
+                        aria-label="Nucleic acid uniform colour hex value"
+                      />
+                    </span>
+                  </label>
+                  <div class="component-gradient-control gradient-control" hidden>
+                    <span>Gradient colours</span>
+                    <div class="gradient-endpoint-sources" hidden>
+                      <span id="nucleic-gradient-start-label"></span>
+                      <span>
+                        <input id="nucleic-gradient-start-wheel" type="color" value="#58bfa8" />
+                        <input id="nucleic-gradient-start-hex" type="text" value="#58BFA8" maxlength="7" />
+                      </span>
+                      <span id="nucleic-gradient-end-label"></span>
+                      <span>
+                        <input id="nucleic-gradient-end-wheel" type="color" value="#e56b6f" />
+                        <input id="nucleic-gradient-end-hex" type="text" value="#E56B6F" maxlength="7" />
+                      </span>
+                    </div>
+                    <div id="nucleic-gradient-midpoints" class="gradient-colors"></div>
+                    <div class="gradient-footer">
+                      <button id="nucleic-gradient-add-color" class="gradient-add-color" type="button">+ Add colour</button>
+                      <p id="nucleic-gradient-count" class="range-help gradient-count">2 of 5 colours</p>
+                    </div>
+                    <p id="nucleic-gradient-help" class="range-help"></p>
+                  </div>
+                  <div id="nucleic-category-colors" class="category-colors"></div>
+                  <details class="advanced-options component-advanced-options">
+                    <summary>Advanced settings</summary>
+                    <fieldset id="nucleic-base-shape-control" class="advanced-group">
+                      <legend>Nucleic bases</legend>
+                      <label>
+                        <span>Base shape</span>
+                        <select id="nucleic-base-shape">
+                          <option value="rectangle">Rectangle</option>
+                          <option value="cylinder">Cylinder</option>
+                          <option value="purine_pyrimidine">Purine / pyrimidine plates</option>
+                        </select>
+                      </label>
+                      <p class="range-help">Plates give purines two fused rings and pyrimidines one ring.</p>
+                    </fieldset>
+                    <fieldset id="nucleic-representation-settings" class="cartoon-settings">
+                      <legend>Representation geometry</legend>
+                      <div id="nucleic-representation-settings-grid" class="cartoon-settings-grid"></div>
+                      <p id="nucleic-representation-settings-help" class="range-help"></p>
+                    </fieldset>
+                    <fieldset id="nucleic-emission-control" class="advanced-group" hidden>
+                      <legend>Emission</legend>
+                      <label class="emission-strength-control">
+                        <span class="range-caption"><span>Emission strength</span><output id="nucleic-emission-value">3.5</output></span>
+                        <input id="nucleic-emission-strength" type="range" min="0" max="20" step="0.5" value="3.5" />
+                      </label>
+                    </fieldset>
+                    <fieldset class="advanced-group">
+                      <legend>Transparency</legend>
+                      <label class="opacity-control component-opacity-control">
+                        <span class="range-caption">
+                          <span>Opacity</span>
+                          <output id="nucleic-opacity-value" for="nucleic-opacity">1</output>
+                        </span>
+                        <input
+                          id="nucleic-opacity"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value="1"
+                          aria-label="Nucleic acid material opacity"
+                        />
+                        <span class="range-help">0 transparent · 1 opaque</span>
+                      </label>
+                    </fieldset>
+                  </details>
+                </div>
+              </fieldset>
+
+              <fieldset id="ligand-style-control" class="component-style">
+                <legend>Ligands</legend>
+                <label class="component-toggle">
+                  <input id="ligand-enabled" type="checkbox" checked />
+                  <span>Include in render</span>
+                </label>
+                <p class="range-help component-absent" id="ligand-absent" hidden>This structure has no ligands.</p>
+                <div class="style-fields component-fields" data-component-detail hidden>
+                  <div class="picker-field" data-picker="ligand-representation">
+                    <span class="picker-caption">Representation</span>
+                    <select id="ligand-representation" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                      <option value="ligand_ball_and_stick">Ball &amp; stick</option>
+                      <option value="ligand_sticks">Sticks</option>
+                      <option value="ligand_spheres">Spheres</option>
+                    </select>
+                  </div>
+                  <!--
+                    A polyatomic ion is a ligand here and not an ion: `residues.js`
+                    calls a residue an ion only when Mol* names it one *and* it has a single atom,
+                    which is what keeps a sulfate off the marker path where it would be five gems.
+                    So SO4, PO4, CO3, NO3, ACT and BF4 arrive in this component, and they are very
+                    often crystallisation buffer rather than the subject — 3RGK's ligand component is
+                    one heme and three sulfates, scattered away from it.
+
+                    A checkbox rather than a fifth component: they are drawn as ligands, and this
+                    says whether to draw them.
+                  -->
+                  <label class="checkbox-control">
+                    <input id="ligand-hide-polyatomic-ions" type="checkbox" />
+                    <span>Hide polyatomic ions</span>
+                  </label>
+                  <div class="picker-field" data-picker="material">
+                    <span class="picker-caption">Material</span>
+                    <select id="ligand-material" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                      <option value="diffuse">Diffuse</option>
+                      <option value="glossy">Glossy</option>
+                      <option value="glass">Glass</option>
+                      <option value="emission">Emission</option>
+                      <option value="satin">Satin</option>
+                      <option value="soft_glossy">Soft glossy</option>
+                      <option value="translucent_context">Translucent</option>
+                      <option value="bioluminescent">Bioluminescent</option>
+                      <option value="chrome">Chrome</option>
+                      <option value="metallic">Metal</option>
+                      <option value="jelly">Jelly</option>
+                      <option value="ceramic">Ceramic</option>
+                    </select>
+                  </div>
+                  <label>
+                    <span>Colour</span>
+                    <select id="ligand-color-mode">
+                      <option value="element">By element</option>
+                      <option value="uniform">Uniform</option>
+                      <option value="chain">By chain</option>
+                      <option value="x_axis">X-axis gradient</option>
+                      <option value="y_axis">Y-axis gradient</option>
+                      <option value="z_axis">Z-axis gradient</option>
+                    </select>
+                  </label>
+                  <label class="component-uniform-color">
+                    <span>Uniform colour</span>
+                    <span class="component-color-inputs">
+                      <input
+                        id="ligand-color-wheel"
+                        type="color"
+                        value="#e56b6f"
+                        aria-label="Ligand uniform colour"
+                      />
+                      <input
+                        id="ligand-color-hex"
+                        type="text"
+                        value="#E56B6F"
+                        maxlength="7"
+                        spellcheck="false"
+                        aria-label="Ligand uniform colour hex value"
+                      />
+                    </span>
+                  </label>
+                  <div class="component-gradient-control gradient-control" hidden>
+                    <span>Gradient colours</span>
+                    <div class="gradient-endpoint-sources" hidden>
+                      <span>
+                        <input id="ligand-gradient-start-wheel" type="color" value="#3d8f89" />
+                        <input id="ligand-gradient-start-hex" type="text" value="#3D8F89" maxlength="7" />
+                      </span>
+                      <span>
+                        <input id="ligand-gradient-end-wheel" type="color" value="#e56b6f" />
+                        <input id="ligand-gradient-end-hex" type="text" value="#E56B6F" maxlength="7" />
+                      </span>
+                    </div>
+                    <div id="ligand-gradient-midpoints" class="gradient-colors"></div>
+                    <div class="gradient-footer">
+                      <button id="ligand-gradient-add-color" class="gradient-add-color" type="button">+ Add colour</button>
+                      <p id="ligand-gradient-count" class="range-help gradient-count">2 of 5 colours</p>
+                    </div>
+                  </div>
+                  <div id="ligand-category-colors" class="category-colors" hidden></div>
+                  <details class="advanced-options component-advanced-options">
+                    <summary>Advanced settings</summary>
+                    <fieldset id="ligand-representation-settings" class="cartoon-settings">
+                      <legend>Representation geometry</legend>
+                      <div id="ligand-representation-settings-grid" class="cartoon-settings-grid"></div>
+                      <p id="ligand-representation-settings-help" class="range-help"></p>
+                    </fieldset>
+                    <fieldset id="ligand-emission-control" class="advanced-group" hidden>
+                      <legend>Emission</legend>
+                      <label class="emission-strength-control">
+                        <span class="range-caption"><span>Emission strength</span><output id="ligand-emission-value">3.5</output></span>
+                        <input id="ligand-emission-strength" type="range" min="0" max="20" step="0.5" value="3.5" />
+                      </label>
+                    </fieldset>
+                    <fieldset class="advanced-group">
+                      <legend>Transparency</legend>
+                      <label class="opacity-control component-opacity-control">
+                        <span class="range-caption">
+                          <span>Opacity</span>
+                          <output id="ligand-opacity-value" for="ligand-opacity">1</output>
+                        </span>
+                        <input
+                          id="ligand-opacity"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value="1"
+                          aria-label="Ligand material opacity"
+                        />
+                        <span class="range-help">0 transparent · 1 opaque</span>
+                      </label>
+                    </fieldset>
+                  </details>
+                </div>
+              </fieldset>
+
+              <fieldset id="ion-style-control" class="component-style compact-style-card">
+                <legend>Ions</legend>
+                <label class="component-toggle">
+                  <input id="ion-enabled" type="checkbox" checked />
+                  <span>Include in render</span>
+                </label>
+                <p class="range-help component-absent" id="ion-absent" hidden>This structure has no monoatomic ions.</p>
+                <div class="style-fields component-fields" data-component-detail hidden>
+                  <div class="picker-field" data-picker="ion-representation">
+                    <span class="picker-caption">Representation</span>
+                    <select id="ion-representation" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                      <option value="ion_spheres">Smooth spheres</option>
+                      <option value="ion_faceted">Faceted markers</option>
+                      <option value="ion_octahedron">Octahedral markers</option>
+                    </select>
+                  </div>
+                  <div class="picker-field" data-picker="material">
+                    <span class="picker-caption">Material</span>
+                    <select id="ion-material" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                      <option value="diffuse">Diffuse</option>
+                      <option value="glossy">Glossy</option>
+                      <option value="glass">Glass</option>
+                      <option value="emission">Emission</option>
+                      <option value="satin">Satin</option>
+                      <option value="soft_glossy">Soft glossy</option>
+                      <option value="translucent_context">Translucent</option>
+                      <option value="bioluminescent">Bioluminescent</option>
+                      <option value="chrome">Chrome</option>
+                      <option value="metallic">Metal</option>
+                      <option value="jelly">Jelly</option>
+                      <option value="ceramic">Ceramic</option>
+                    </select>
+                  </div>
+                  <label>
+                    <span>Colour</span>
+                    <select id="ion-color-mode">
+                      <option value="element">By element</option>
+                      <option value="uniform">Uniform</option>
+                      </select>
+                  </label>
+                  <label class="component-uniform-color">
+                    <span>Uniform colour</span>
+                    <span class="component-color-inputs">
+                      <input
+                        id="ion-color-wheel"
+                        type="color"
+                        value="#e2b84b"
+                        aria-label="Ion uniform colour"
+                      />
+                      <input
+                        id="ion-color-hex"
+                        type="text"
+                        value="#E2B84B"
+                        maxlength="7"
+                        spellcheck="false"
+                        aria-label="Ion uniform colour hex value"
+                      />
+                    </span>
+                  </label>
+                  <!--
+                    Ions offer element and uniform colour only, so this card has no gradient
+                    endpoints: GRADIENT_COLOR_MODES holds the three axis modes and #ion-color-mode
+                    offers none of them. updateComponentStyleControl() treats a component without
+                    them as a no-op; the ligand card ships them.
+
+                    The per-element swatches below are a different case and deliberately stay.
+                    renderCategoryColors() reveals them for `chain` *or* `element`, and `element` is
+                    this card's default, so they are on the resting path whenever the structure has
+                    ions. They are also what ions most need: one colour per element is how Na, Zn
+                    and Ca are told apart.
+
+                    Order matches the Ligand card: colour mode, then the colour value, then the
+                    per-category swatches, then the disclosure. Sitting between the mode and its
+                    value would put the advanced settings in the middle of one decision.
+                  -->
+                  <div id="ion-category-colors" class="category-colors" hidden></div>
+                  <details class="advanced-options component-advanced-options ion-advanced-options">
+                    <summary>Advanced settings</summary>
+                    <fieldset id="ion-representation-settings" class="cartoon-settings">
+                      <legend>Representation geometry</legend>
+                      <div id="ion-representation-settings-grid" class="cartoon-settings-grid"></div>
+                      <p id="ion-representation-settings-help" class="range-help"></p>
+                    </fieldset>
+                    <fieldset id="ion-fluorescence-control" class="advanced-group" hidden>
+                      <legend>Emission</legend>
+                      <label class="ion-fluorescence-control">
+                        <span class="range-caption">
+                          <span>Emission strength</span>
+                          <output id="ion-fluorescence-value" for="ion-fluorescence">3.5</output>
+                        </span>
+                        <input
+                          id="ion-fluorescence"
+                          type="range"
+                          min="0"
+                          max="20"
+                          step="0.5"
+                          value="3.5"
+                        />
+                        <span class="range-help">0 off · 20 intense</span>
+                      </label>
+                    </fieldset>
+                    <fieldset class="advanced-group">
+                      <legend>Transparency</legend>
+                      <label class="opacity-control component-opacity-control">
+                        <span class="range-caption">
+                          <span>Opacity</span>
+                          <output id="ion-opacity-value" for="ion-opacity">1</output>
+                        </span>
+                        <input
+                          id="ion-opacity"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value="1"
+                          aria-label="Ion material opacity"
+                        />
+                        <span class="range-help">0 transparent · 1 opaque</span>
+                      </label>
+                    </fieldset>
+                  </details>
+                </div>
+              </fieldset>
+
+              <!--
+                Water. **One look and one colour mode, so neither is a control**: a dot per
+                molecule, sized and coloured, with the material picker beside them. No deposited
+                entry carries water hydrogens, so a ball-and-stick, stick or space-filling water
+                draws a bare oxygen or nothing at all; and colouring a solid that stands for a
+                whole molecule by the element of the atom it sits on is the wrong question.
+
+                `water-enabled` ships unchecked and that is the product decision. A deposited
+                structure is mostly water by residue count, and a picture that opens with it drawn
+                is a picture of a solvent box.
+
+                Hiding all of it is this checkbox; showing one water is a selection layer, which
+                draws whatever this switch says because `scene.js` builds layers without reading
+                `enabled`. There is no water-specific mechanism.
+              -->
+              <fieldset id="water-style-control" class="component-style compact-style-card">
+                <legend>Water</legend>
+                <label class="component-toggle">
+                  <input id="water-enabled" type="checkbox" />
+                  <span>Include in render</span>
+                </label>
+                <p class="range-help component-absent" id="water-absent" hidden>This structure has no water.</p>
+                <div class="style-fields component-fields" data-component-detail hidden>
+                  <div class="picker-field" data-picker="material">
+                    <span class="picker-caption">Material</span>
+                    <select id="water-material" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                      <option value="diffuse">Diffuse</option>
+                      <option value="glossy">Glossy</option>
+                      <option value="glass">Glass</option>
+                      <option value="emission">Emission</option>
+                      <option value="satin">Satin</option>
+                      <option value="soft_glossy">Soft glossy</option>
+                      <option value="translucent_context">Translucent</option>
+                      <option value="bioluminescent">Bioluminescent</option>
+                      <option value="chrome">Chrome</option>
+                      <option value="metallic">Metal</option>
+                      <option value="jelly">Jelly</option>
+                      <option value="ceramic">Ceramic</option>
+                    </select>
+                  </div>
+                  <label class="component-uniform-color">
+                    <span>Colour</span>
+                    <span class="component-color-inputs">
+                      <input
+                        id="water-color-wheel"
+                        type="color"
+                        value="#6fc3e8"
+                        aria-label="Water colour"
+                      />
+                      <input
+                        id="water-color-hex"
+                        type="text"
+                        value="#6FC3E8"
+                        maxlength="7"
+                        spellcheck="false"
+                        aria-label="Water colour hex value"
+                      />
+                    </span>
+                  </label>
+                  <details class="advanced-options component-advanced-options">
+                    <summary>Advanced settings</summary>
+                    <fieldset id="water-representation-settings" class="cartoon-settings">
+                      <legend>Representation geometry</legend>
+                      <div id="water-representation-settings-grid" class="cartoon-settings-grid"></div>
+                      <p id="water-representation-settings-help" class="range-help"></p>
+                    </fieldset>
+                    <fieldset id="water-emission-control" class="advanced-group" hidden>
+                      <legend>Emission</legend>
+                      <label class="emission-strength-control">
+                        <span class="range-caption"><span>Emission strength</span><output id="water-emission-value">3.5</output></span>
+                        <input id="water-emission-strength" type="range" min="0" max="20" step="0.5" value="3.5" />
+                      </label>
+                    </fieldset>
+                    <fieldset class="advanced-group">
+                      <legend>Transparency</legend>
+                      <label class="opacity-control component-opacity-control">
+                        <span class="range-caption">
+                          <span>Opacity</span>
+                          <output id="water-opacity-value" for="water-opacity">1</output>
+                        </span>
+                        <input
+                          id="water-opacity"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value="1"
+                          aria-label="Water material opacity"
+                        />
+                        <span class="range-help">0 transparent · 1 opaque</span>
+                      </label>
+                    </fieldset>
+                  </details>
+                </div>
+              </fieldset>
+            </div>
+          </details>
+
+          <details class="rail-card">
+            <summary>Lighting</summary>
+            <div class="rail-body">
+              <div class="picker-field" data-picker="lighting">
+                <span class="picker-caption">Illumination</span>
+                <select id="lighting-source" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                  <!-- One ungrouped run, in the tile order src/catalog/lighting.js declares.
+                       Autumn meadow keeps `selected`: it is the source the app opens on. -->
+                  <option value="autumn_meadow" selected>Autumn meadow HDRI</option>
+                  <option value="blue_studio">Blue studio HDRI</option>
+                  <option value="dark_studio">Dark studio HDRI</option>
+                  <option value="neutral_softbox">Neutral softbox HDRI</option>
+                  <option value="overcast_sky">Soft overcast HDRI</option>
+                  <option value="clear_sky">Clear directional HDRI</option>
+                  <option value="cool_night">Cool night HDRI</option>
+                  <option value="fluorescence_darkfield">Fluorescence dark-field</option>
+                  <option value="glass_studio">Glass studio</option>
+                </select>
+              </div>
+              <section class="lighting-compass-panel" aria-labelledby="lighting-compass-heading">
+                <div class="lighting-compass-heading">
+                  <span id="lighting-compass-heading">Environment orientation</span>
+                  <span id="lighting-compass-kind" class="lighting-compass-kind">Broad environment</span>
+                </div>
+                <button
+                  id="lighting-compass"
+                  class="lighting-compass"
+                  type="button"
+                  aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home"
+                >
+                  <svg class="lighting-compass-scene" viewBox="0 0 240 210" aria-hidden="true">
+                    <defs>
+                      <radialGradient id="lighting-compass-sphere-fill" cx="38%" cy="30%" r="72%">
+                        <stop offset="0" stop-color="#ffffff" />
+                        <stop offset="0.55" stop-color="#e9eef8" />
+                        <stop offset="1" stop-color="#cbd5e7" />
+                      </radialGradient>
+                    </defs>
+                    <path class="lighting-compass-box-back" d="M45 28h150v150H45z" />
+                    <path class="lighting-compass-box-front" d="M28 45h150v150H28z" />
+                    <path class="lighting-compass-box-edge" d="M28 45l17-17m133 17l17-17m-17 167l17-17" />
+                    <circle class="lighting-compass-orbit" cx="111.5" cy="111.5" r="62" />
+                    <ellipse class="lighting-compass-gridline" cx="111.5" cy="111.5" rx="62" ry="21" />
+                    <ellipse
+                      class="lighting-compass-gridline lighting-compass-gridline-vertical"
+                      cx="111.5"
+                      cy="111.5"
+                      rx="21"
+                      ry="62"
+                    />
+                    <line id="lighting-compass-line" x1="111.5" y1="111.5" x2="111.5" y2="111.5" />
+                    <g class="lighting-compass-subject" transform="translate(111.5 111.5)">
+                      <line x1="-12" y1="4" x2="0" y2="-9" />
+                      <line x1="0" y1="-9" x2="13" y2="5" />
+                      <circle cx="-12" cy="4" r="6" />
+                      <circle cx="0" cy="-9" r="6" />
+                      <circle cx="13" cy="5" r="6" />
+                    </g>
+                  </svg>
+                  <span class="lighting-compass-axis lighting-compass-axis-top" aria-hidden="true">Up</span>
+                  <span class="lighting-compass-axis lighting-compass-axis-right" aria-hidden="true">Right</span>
+                  <span class="lighting-compass-axis lighting-compass-axis-bottom" aria-hidden="true">Down</span>
+                  <span class="lighting-compass-axis lighting-compass-axis-left" aria-hidden="true">Left</span>
+                  <span id="lighting-compass-marker" class="lighting-compass-marker" data-kind="broad" aria-hidden="true">
+                    <span class="lighting-compass-marker-core"></span>
+                  </span>
+                </button>
+                <div class="lighting-compass-readout">
+                  <output id="lighting-compass-values">Camera-relative · elev −168.5° · az 21.1°</output>
+                </div>
+              </section>
+              <details class="advanced-options lighting-advanced-options">
+                <summary>Advanced settings</summary>
+                <fieldset class="advanced-group">
+                  <legend>Strength</legend>
+                  <label class="lighting-strength-control">
+                    <span class="range-caption">
+                      <span>Strength</span>
+                      <output id="lighting-strength-value" for="lighting-strength">1</output>
+                    </span>
+                    <input
+                      id="lighting-strength"
+                      type="range"
+                      min="0"
+                      max="4"
+                      step="0.05"
+                      value="1"
+                      aria-label="Illumination strength multiplier"
+                    />
+                    <span class="range-help">0 off · 1 authored · 4 maximum</span>
+                  </label>
+                </fieldset>
+                <fieldset class="advanced-group">
+                  <legend>Orientation</legend>
+                  <label>
+                    <span>Anchor</span>
+                    <select id="lighting-anchor">
+                      <option value="world">World</option>
+                      <option value="camera" selected>Camera-relative</option>
+                    </select>
+                  </label>
+                  <div id="lighting-angle-control" class="hdri-angle-control">
+                    <div class="hdri-angle-fields">
+                      <label>
+                        <span>Elevation</span>
+                        <input id="hdri-elevation" type="number" min="-180" max="180" step="0.1" value="-168.5" />
+                      </label>
+                      <label>
+                        <span>Azimuth</span>
+                        <input id="hdri-azimuth" type="number" min="-360" max="360" step="0.1" value="21.1" />
+                      </label>
+                    </div>
+                  </div>
+                </fieldset>
+                <!--
+                  Swapping the environment that glossy and transmission rays see, while diffuse and
+                  shadow rays keep the HDRI, is a more advanced idea than either strength or
+                  orientation. It belongs behind the same disclosure they are, not in the resting
+                  card above them.
+                -->
+                <fieldset class="advanced-group">
+                  <legend>Reflections and refraction</legend>
+                  <label>
+                    <span>Environment</span>
+                    <select id="reflection-environment">
+                      <option value="source">Same as Autumn meadow HDRI</option>
+                      <option value="studio">Studio softboxes</option>
+                      <option value="grid">Scientific grid</option>
+                      <option value="color">Solid colour</option>
+                    </select>
+                  </label>
+                  <label id="reflection-color-control" hidden>
+                    <span>Environment colour</span>
+                    <span class="component-color-inputs">
+                      <input id="reflection-color-wheel" type="color" value="#182533" />
+                      <input id="reflection-color-hex" type="text" value="#182533" maxlength="7" />
+                    </span>
+                  </label>
+                  <p class="card-note">Reflections and refraction may use a separate environment · Film stays transparent</p>
+                </fieldset>
+              </details>
+            </div>
+          </details>
+        </section>
+
+        <section
+          id="camera-render-settings"
+          class="rail-group"
+          aria-labelledby="camera-render-heading"
+        >
+          <h2 id="camera-render-heading" class="visually-hidden">Camera and output quality</h2>
+
+          <details class="rail-card">
+            <summary>Camera</summary>
+            <div class="rail-body">
+              <!--
+                Framing lives on the Preview viewport (#preview-camera-framing), which is where its
+                result is read, and Fit visible structure is the one framing action worth a
+                control: Mol*'s own reset is a double-click on the canvas away, and framing a
+                selection is a right-rail concept the selection tools already reach. This card is
+                the lens: what the camera sees, and how much of it is sharp.
+              -->
+              <!--
+                The control for `camera.vertical_fov_degrees`, a camera property the request
+                carries. The field of view is the tracer's own and is vertical, against an authored
+                24mm vertical sensor, so every stop on this slider is exact -- see
+                src/camera-framing.js for the conversion and the compensating dolly.
+
+                One continuous control rather than a preset list plus an escape hatch: a lens is
+                one number, every value between the named ones is as valid as the named ones, and
+                dragging it shows the perspective changing rather than jumping between five of
+                them. Whole-millimetre steps, and the readout carries the field of view because
+                that is the half of "focal length" a viewer actually shows.
+
+                It rests at 29mm, which is Mol*'s own 45-degree default -- so a structure loads at
+                the camera Mol* framed it with, untouched, and nothing in this app moves the lens
+                until the slider does. See DEFAULT_FOCAL_LENGTH_MM.
+              -->
+              <label class="focal-length-control">
+                <span class="range-caption">
+                  <span>Focal length</span>
+                  <output id="focal-length-value" for="focal-length">29 mm · 45°</output>
+                </span>
+                <input id="focal-length" type="range" min="8" max="300" step="1" value="29" />
+              </label>
+              <label class="checkbox-control">
+                <input id="depth-of-field-enabled" type="checkbox" />
+                <span>Enable camera depth of field</span>
+              </label>
+              <div id="depth-of-field-detail" class="dof-detail" hidden>
+                <label class="f-stop-control">
+                  <span class="range-caption">
+                    <span>F-stop</span>
+                    <output id="f-stop-value" for="f-stop">2.8</output>
+                  </span>
+                  <input id="f-stop" type="range" min="0.1" max="16" step="0.1" value="2.8" />
+                </label>
+                <div class="focus-control">
+                  <span class="focus-label">Focus point</span>
+                  <p id="focus-selection-status">Auto · centre of frame</p>
+                  <!-- Auto focus is shown only while a point is picked: it is the way back. -->
+                  <div class="focus-actions">
+                    <button
+                      id="pick-depth-of-field-focus"
+                      type="button"
+                      aria-pressed="false"
+                      disabled
+                    >
+                      Pick focus in Mol*
+                    </button>
+                    <button id="auto-depth-of-field-focus" type="button" hidden>Auto focus</button>
+                  </div>
+                </div>
+                <p class="settings-note">
+                  Lower F-stops produce stronger blur. Unpicked, focus follows whatever is at the
+                  centre of the frame. Pick a visible atom for atom-accurate focus; a cartoon click
+                  focuses the corresponding residue.
+                </p>
+              </div>
+            </div>
+          </details>
+
+          <details class="rail-card">
+            <summary>Output</summary>
+            <div class="rail-body">
+              <label class="quality-profile-control">
+                <span>Quality profile</span>
+                <!--
+                  "Default" is the authored 1024/128 pair, and it is a real profile: it is the only
+                  named way back to the values the scenes ship with, and nothing else restores
+                  1024/1024/128. Not "Current": that reads as a description of the live state
+                  rather than a destination, and goes stale the moment the fields below are edited.
+                -->
+                <!--
+                  Ordered by samples, cheapest first, so the list reads as one axis -- how long
+                  this iteration is allowed to take -- rather than as four unrelated names. Default
+                  keeps `selected`: reordering the options must not change which one the authored
+                  markup starts on, and the quality-synchronization contract pins 1024/1024/128.
+                  Custom values stays last because it is not a point on that axis.
+                -->
+                <select id="render-quality-profile">
+                  <option value="draft">Draft · 512px / 32 samples</option>
+                  <option value="review">Review · 1024px / 64 samples</option>
+                  <option value="default" selected>Default · 1024px / 128 samples</option>
+                  <option value="high">High · 2048px / 256 samples</option>
+                  <option value="ultra">Ultra · 3840px / 512 samples</option>
+                  <option value="custom">Custom values</option>
+                </select>
+              </label>
+              <label class="quality-profile-control">
+                <span>Aspect ratio</span>
+                <select id="render-aspect">
+                  <option value="1:1">Square 1:1</option>
+                  <option value="4:3">Landscape 4:3</option>
+                  <option value="3:2">Landscape 3:2</option>
+                  <option value="16:9" selected>Landscape 16:9</option>
+                  <option value="3:4">Portrait 3:4</option>
+                  <option value="2:3">Portrait 2:3</option>
+                  <option value="9:16">Portrait 9:16</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <!--
+                The raw output values sit behind the same Advanced settings disclosure the Protein
+                and Lighting cards use. The iteration shortcut above is the ordinary way to choose
+                a quality, and it already states the numbers it writes, so three number fields
+                repeating them would be the card's loudest row for the least frequent decision.
+                main.js opens this on `Custom values` -- that is the one shortcut entry that names
+                no numbers, so the numbers have to be on screen for it -- and on loading a session
+                whose sizes match no profile. Nothing closes it again: the view transform and
+                denoising live here too and no profile writes them, so a user who opened it to
+                reach those must not have it shut under them by the next shortcut choice.
+              -->
+              <details class="advanced-options output-advanced-options" id="output-advanced">
+                <summary>Advanced settings</summary>
+                <!--
+                  The maxima are also what a session document may ask for. 16384 is the largest
+                  `maxTextureDimension2D` a browser reports, and the renderer refuses past the
+                  adapter's own; 65536 samples is 128 times the Ultra profile's.
+                -->
+                <div class="settings-fields output-settings-fields">
+                  <label>
+                    <span>Width</span>
+                    <input id="render-width" type="number" min="64" max="16384" step="1" value="1024" />
+                  </label>
+                  <label>
+                    <span>Height</span>
+                    <input id="render-height" type="number" min="64" max="16384" step="1" value="576" />
+                  </label>
+                  <label>
+                    <span>Samples</span>
+                    <input id="render-samples" type="number" min="1" max="65536" step="1" value="128" />
+                  </label>
+                </div>
+                <label class="view-transform-control">
+                  <span>View transform</span>
+                  <!--
+                    The order mirrors `VIEW_TRANSFORMS` in `capabilities.js`. Filmic is first and is
+                    also `DEFAULT_VIEW_TRANSFORM`, and first and default are different facts: first
+                    is the shader's fallback for an id it does not know, so reordering this table
+                    on the reasoning that "the first one is the default anyway" silently moves that
+                    fallback.
+
+                    **These options equal `capabilities().viewTransforms`, and that is the property
+                    to keep.** An unknown id falls through to Filmic, so a row the capability list
+                    does not carry would offer a substitution nothing declares. Never add one.
+
+                    The AgX label says which AgX: this renderer applies AgX Base and no look, so
+                    the label says so rather than promising a curve nothing here evaluates.
+                  -->
+                  <select id="view-transform">
+                    <option value="filmic">Filmic · Very High Contrast</option>
+                    <option value="agx">AgX · Base</option>
+                    <option value="standard">Standard · non-photorealistic</option>
+                    <option value="raw">Raw · linear, no encoding</option>
+                  </select>
+                </label>
+                <label class="checkbox-control">
+                  <input id="render-denoising" type="checkbox" checked />
+                  <span>Use denoising</span>
+                </label>
+              </details>
+              <!--
+                The Output card is its own controls and nothing below them: the renderer's capability
+                report is not disclosed here. `#notes` over the picture is what states a refusal
+                about the picture in front of you.
+              -->
+            </div>
+          </details>
+        </section>
+      </div>
+
+      <main class="stage" aria-labelledby="compose-heading">
+        <h2 id="compose-heading" class="visually-hidden">Frame and refine</h2>
+
+        <div class="stage-styles">
+<!-- The strip's contents are built by src/styles-strip.js from the catalogue: nothing
+               pickable is authored here. The bar's own `Styles` tag is built there too, because it
+               is the gallery's doorway rather than a label. -->
+        </div>
+
+        <!--
+          Render and Compare are overlays *inside* the viewer panel, so switching modes cannot
+          change what the stage measures. The live canvas is hidden with `visibility` (see
+          .viewer-panel[data-stage-mode] in styles.css), never with `display` or [hidden], both of
+          which collapse its box and make Mol* resize to it.
+        -->
+        <section
+          class="viewer-panel"
+          data-sequence-drawer="collapsed"
+          data-stage-mode="preview"
+          data-backdrop="alpha"
+          aria-label="Interactive molecular sequence and 3D view"
+        >
+          <div id="viewer"></div>
+
+          <!--
+            The live trace. `#viewer` holds the Mol* preview, and `src/stage-modes.js` switches this
+            panel between Preview, Live, Result and Compare. `src/main.js` binds `#trace-canvas`,
+            `#readout`, `#notes` and `#stage-busy`.
+
+            `#stage` is the wrapper for the trace and `main.stage` above is the whole middle
+            column: two different boxes. The stylesheet scopes every rule here as
+            `.viewer-panel > #stage` so the two cannot be confused.
+          -->
+          <div id="stage">
+            <canvas id="trace-canvas"></canvas>
+            <!--
+              The gap between pressing Live and the first traced frame: on a large structure the
+              geometry and the BVH are seconds of work behind a stage that is still empty. Shown by
+              `src/main.js` on the way into Live and taken down by the first frame.
+            -->
+            <p id="stage-busy" role="status" hidden><span class="stage-busy-spinner" aria-hidden="true"></span>Starting the trace…</p>
+            <p id="notes" hidden></p>
+            <!-- The sample count from the first moment, never a sentence a count replaces later:
+                 `traceReadout()` and `sayZeroSamples()` write the same one line. -->
+            <p id="readout"><strong>0</strong></p>
+          </div>
+
+          <!--
+            The sequence region. Mol*'s own `SequenceView` is `mol-plugin-ui` and therefore React,
+            and the Viewer app is ruled out here for a separate reason -- it would parse a second
+            `Structure`. `src/sequence-strip.js` draws this from our own residue list, which is a
+            projection of the one `Structure` the tracer reads.
+
+            Class only, and no control id. `--sequence-drawer-height` is what sizes it.
+          -->
+          <div class="sequence-region" aria-label="Structure sequence"></div>
+
+          <div class="sequence-drawer-bar">
+            <button id="sequence-drawer-toggle" type="button" aria-expanded="false">
+              <span class="sequence-drawer-chevron" aria-hidden="true"></span>
+              <span>Sequence</span>
+            </button>
+          </div>
+
+          <!-- One session-only camera bookmark for the open structure. This floats over Preview
+               and never takes a row from the live canvas. stage-modes.js keeps it out of
+               the accessibility tree in Result and Compare; main.js owns the camera itself. -->
+          <div
+            id="preview-camera-view-actions"
+            class="preview-camera-view-actions"
+            role="group"
+            aria-label="Saved camera view"
+            aria-hidden="false"
+          >
+            <button id="save-camera-view" type="button" aria-live="polite" disabled>Save camera view</button>
+            <button id="go-to-saved-camera-view" type="button" disabled>Go to saved view</button>
+          </div>
+
+          <!-- The one framing action, on the view it frames. Top left, on the same line as the
+               saved-camera bookmark at top right, so Preview reads as one row of camera controls
+               over the canvas. Mol*'s selection toolbar shares that band but is 430px wide and
+               centred (`margin: 10px auto`), so it never reaches either end.
+
+               Same absolute/visibility treatment as the bookmark: no layout row, and the canvas
+               is the same size with it shown and with it hidden. main.js owns the listener and
+               the disabled state, and names the button explicitly in setRenderControlsDisabled()
+               because the scoped bulk disable only reaches #style-controls, #selection-panel and
+               #camera-render-settings. -->
+          <div
+            id="preview-camera-framing"
+            class="preview-camera-framing"
+            role="group"
+            aria-label="Camera framing"
+            aria-hidden="false"
+          >
+            <button id="fit-visible-structure" type="button" disabled>Fit visible structure</button>
+          </div>
+
+          <!-- The depth-of-field callout, directly under Fit visible structure and sharing
+               its left edge, so it reads as a note on the live view rather than as a dialog.
+
+               Why it exists: a Style may turn depth of field on, and with nothing picked the blur
+               falls on whatever the Mol* camera happens to point at. That is a reasonable default
+               and a silent one -- the render comes back soft in a place nobody chose, and the only
+               report of it is a status line in a closed rail card. This says so once, at the moment
+               it first becomes true, beside the picture it is about.
+
+               On every apply that leaves depth of field on, picked point or not, until "Don't show
+               again" mutes it for the browser session. The mute is a button rather than a checkbox:
+               the shell's capture-phase change listener would mark the session dirty from it.
+               main.js owns every bit of that; the box carries no state.
+
+               Same absolute/visibility treatment as everything else over the canvas -- the canvas
+               is the same size with it shown and with it hidden. The f-stop range in it is a
+               second face for #f-stop and never a second source: it writes that control and
+               dispatches its real event, which is what keeps one number in one place. -->
+          <div
+            id="style-focus-prompt"
+            class="preview-focus-prompt"
+            role="status"
+            aria-label="Focus point not selected"
+            hidden
+          >
+            <p class="focus-prompt-title">
+              <span aria-hidden="true">!</span>
+              <span id="style-focus-prompt-title-text">Focus point not selected</span>
+            </p>
+            <p id="style-focus-prompt-note" class="focus-prompt-note">
+              This style uses depth of field. It is focusing on whatever is at the centre of the
+              frame until you pick a point.
+            </p>
+            <label class="focus-prompt-fstop">
+              <span class="range-caption">
+                <span>F-stop</span>
+                <output id="style-focus-prompt-f-stop-value" for="style-focus-prompt-f-stop">2.8</output>
+              </span>
+              <input
+                id="style-focus-prompt-f-stop"
+                type="range"
+                min="0.1"
+                max="16"
+                step="0.1"
+                value="2.8"
+              />
+            </label>
+            <div class="focus-prompt-actions">
+              <button id="style-focus-prompt-pick" type="button">Pick focus point</button>
+              <button id="style-focus-prompt-dismiss" type="button">Not now</button>
+            </div>
+            <button id="style-focus-prompt-mute" class="focus-prompt-mute" type="button">
+              Don't show again
+            </button>
+          </div>
+
+          <!-- The matte is the pan/zoom viewport: it already clips, so a magnified render is
+               cropped to the stage rather than escaping it. tabindex makes arrow-key panning and
+               +/-/0 reachable without a pointer. -->
+          <div id="stage-render-surface" class="stage-surface" aria-label="Rendered image" hidden>
+            <div class="stage-result-actions" role="group" aria-label="Apply viewed result">
+              <button
+                id="stage-apply-settings"
+                type="button"
+                title="Apply the exact settings that produced the result currently shown"
+              >Apply</button>
+              <button
+                id="stage-apply-style"
+                type="button"
+                title="Apply only the Style used by the result currently shown"
+              >Apply style only</button>
+            </div>
+            <!--
+              One right-hand column so the three Result boxes share an edge and a width without any
+              hardcoded pixel guess at how wide "Download session" renders in the user's font:
+              the session box sits in column 2 and sizes it, and `1fr` makes column 1 match, so
+              the download row's two halves each come out the size of the session button. Quick
+              Image is the first child and the only one of the four that is in Live; it spans both
+              columns, because in that mode there is no session button measuring one for it.
+            -->
+            <div class="stage-action-stack">
+              <!--
+                **Live's one action, and the only one on this stack that is in Live.**
+
+                It stands in place of Download PNG, Download session and Improve image -- all three
+                of which act on "the result currently shown", and in Live there is none: `activeId`
+                is defined exactly when the mode is `render`, so two of them could only ever be
+                disabled here and the third would write a file the app then forgets. That is the same
+                argument the Apply pair is absent on, one row up.
+
+                What it does is `renderStructure()` minus the render. It captures the composition
+                the way a Create Image press captures it and reads the trace back off the renderer
+                exactly as it stands, then announces the pair on `foldray:render-complete` -- the same
+                event, the same tray entry, the same Apply. So a picture the user has been watching
+                converge can be kept, compared and applied without tracing it a second time, and
+                the sample count that travels with it is the one that was achieved.
+              -->
+              <button
+                id="stage-quick-image"
+                class="stage-quick-image"
+                type="button"
+                title="Keep the live trace exactly as it stands, with the settings that made it"
+              >Quick Image</button>
+              <div class="stage-downloads" role="group" aria-label="Download viewed render">
+                <button
+                  id="stage-download-png"
+                  type="button"
+                  title="Download the PNG currently shown"
+                >Download PNG</button>
+                <!--
+                  Written here, not fetched: `src/tiff.js` is a baseline TIFF writer built from
+                  Adobe's 1992 specification. 32-bit float and scene-linear -- the accumulated
+                  picture before the view transform, unclamped, for editing in other software. Same
+                  backdrop and file name as the PNG.
+                -->
+                <button
+                  id="stage-download-tiff"
+                  type="button"
+                  title="Download the 32-bit float linear TIFF of the render currently shown"
+                >Download TIFF</button>
+              </div>
+              <div
+                class="stage-session-download"
+                role="group"
+                aria-label="Download viewed render settings"
+              >
+                <button
+                  id="stage-download-set"
+                  type="button"
+                  title="Download the complete settings for the render currently shown"
+                >Download session</button>
+              </div>
+              <button
+                id="stage-post-process-toggle"
+                class="stage-post-process-toggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="post-process-panel"
+                title="Improve the picture without tracing it again"
+              >
+                <span>Improve image</span>
+                <!-- Drawn in CSS, like every other disclosure caret on the page. -->
+                <span class="stage-post-process-chevron" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div
+              id="stage-render-viewport"
+              class="stage-image-bg"
+              tabindex="0"
+              role="group"
+              aria-label="Rendered image viewport. Arrow keys pan, plus and minus zoom, 0 fits."
+            >
+              <!--
+                An `<img>`, not a canvas. The trace stays on `#trace-canvas`, because
+                `Renderer.create()` configures a WebGPU context on one canvas for the life of the
+                page, and that is the canvas `readPixels()` and `renderExactly()` already drive --
+                while pan and zoom belong to a finished picture, which is what this element shows.
+                `src/render-zoom.js` reads `naturalWidth` off it and `styles.css` matches it as
+                `.stage-surface img`.
+              -->
+              <img id="stage-render-image" alt="" />
+              <canvas id="post-process-preview" aria-hidden="true"></canvas>
+            </div>
+          </div>
+
+          <!--
+            Pane B is authored first so that Overlay, which stacks both panes in one box, paints B
+            over A with no clip on either. Wipe stacks them the same way but clips each to its own
+            side of the divider, and Split places the panes by grid line instead of by source order
+            (styles.css) -- so A is the left half in both of those.
+
+            Both images start with no `src` and an empty `alt`: an <img> with a source removed but
+            an alt left behind draws the alt string over the stage. stage-modes.js writes both
+            together, or neither.
+          -->
+          <div id="stage-compare-surface" class="stage-surface" aria-label="Compare renders" hidden>
+            <!--
+              Same floating treatment as Result's, because it answers the same question: write what
+              is on the stage to disk. It composes the two PNGs the way the active layout shows
+              them, so what lands in Downloads is the comparison, not one of its halves.
+            -->
+            <div class="stage-downloads" role="group" aria-label="Download comparison">
+              <button
+                id="compare-download-png"
+                type="button"
+                title="Download the comparison currently shown as one PNG"
+              >Download PNG</button>
+            </div>
+            <div id="compare-frame" class="compare-frame" data-layout="wipe">
+              <div class="compare-pane compare-pane-b">
+                <div
+                  id="compare-viewport-b"
+                  class="stage-image-bg zoom-viewport"
+                  tabindex="0"
+                  role="group"
+                  aria-label="Render B viewport. Wheel or plus and minus zoom; arrow keys pan."
+                >
+                  <img id="compare-image-b" alt="" />
+                </div>
+              </div>
+              <div class="compare-pane compare-pane-a">
+                <div
+                  id="compare-viewport-a"
+                  class="stage-image-bg zoom-viewport"
+                  tabindex="0"
+                  role="group"
+                  aria-label="Render A viewport. Wheel or plus and minus zoom; arrow keys pan."
+                >
+                  <img id="compare-image-a" alt="" />
+                </div>
+              </div>
+              <button
+                id="compare-wipe"
+                class="compare-wipe"
+                type="button"
+                role="slider"
+                title="Drag to wipe between A and B. Arrow keys step it; double-click centres it."
+                aria-label="Wipe position"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="50"
+              ></button>
+            </div>
+            <div class="compare-bar">
+              <div class="compare-layouts" role="group" aria-label="Compare layout">
+                <button id="compare-layout-wipe" type="button" aria-pressed="true">Wipe</button>
+                <button id="compare-layout-split" type="button" aria-pressed="false">Split</button>
+                <!-- Both renders are transparent RGBA, so stacking them un-clipped reads as one
+                     picture: A behind, B in front. Wipe and Split each show half of each render;
+                     this is the layout that shows all of both. -->
+                <button id="compare-layout-overlay" type="button" aria-pressed="false">Overlay</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!--
+          Four modes, and the middle two are one mode split. `#stage-live` exists because the trace
+          runs in exactly one mode and stops in every other, so the mode it runs in has to be
+          nameable. Live is the converging trace and orbits the structure through the Mol* canvas
+          underneath; Result is a finished picture from the tray.
+        -->
+        <div class="stage-modes" role="group" aria-label="Stage source">
+          <button id="stage-preview" type="button" aria-pressed="true" disabled>Preview</button>
+          <button
+            id="stage-live"
+            type="button"
+            aria-pressed="false"
+            title="Trace this structure live. Drag to orbit, wheel to zoom; the picture keeps converging."
+            disabled
+          >Live</button>
+          <button id="stage-render" type="button" aria-pressed="false" disabled>Result</button>
+          <button id="stage-compare" type="button" aria-pressed="false" disabled>Compare</button>
+        </div>
+
+        <!-- Zoom is one shared CSS-transform view across Render and both Compare PNGs. It never reaches the render
+             request and, like every other stage control, it is buttons only so that inspecting a
+             render cannot mark the session unsaved. -->
+        <div id="stage-zoom" class="stage-zoom" role="group" aria-label="Render and comparison zoom" hidden>
+          <button id="stage-zoom-out" type="button" aria-label="Zoom out">&minus;</button>
+          <span id="stage-zoom-level" class="stage-zoom-level" aria-live="polite">Fit</span>
+          <button id="stage-zoom-in" type="button" aria-label="Zoom in">+</button>
+          <button id="stage-zoom-fit" type="button" aria-pressed="true">Fit</button>
+          <button id="stage-zoom-actual" type="button" aria-pressed="false">1:1</button>
+        </div>
+
+        <!-- Backdrop is a stage matte and never reaches the render request; a download composites
+             the current choice at save time. -->
+        <div id="stage-backdrops" class="stage-backdrops" role="group" aria-label="Backdrop" hidden>
+          <button type="button" data-backdrop="alpha" aria-pressed="true">Alpha</button>
+          <button type="button" data-backdrop="white" aria-pressed="false">White</button>
+          <button type="button" data-backdrop="black" aria-pressed="false">Black</button>
+        </div>
+
+        <!--
+          The strip is the render tray and nothing else: a second, larger copy of the image already
+          on the stage would take a third of the row for a picture the stage is already showing.
+        -->
+        <div class="stage-renders">
+          <p class="stage-renders-empty">Finished renders appear here.</p>
+          <div
+            id="render-history"
+            class="render-history"
+            role="group"
+            aria-label="Render history"
+            hidden
+          ></div>
+          <div id="render-removal-undo" class="render-removal-undo" hidden>
+            <span id="render-removal-status" role="status" aria-live="polite"></span>
+            <button id="render-removal-undo-button" type="button">Undo remove</button>
+          </div>
+          <!--
+            Authored here rather than rebuilt with the strip: paintHistory() replaces every item on
+            each paint, and a live region re-created that often re-announces itself. It is a flex
+            item in this row, so it costs the strip width and never height -- `--renders-height` and
+            the Styles bar are the two rows the canvas does not get.
+          -->
+          <p id="render-history-warning" class="render-history-warning" role="status" hidden></p>
+        </div>
+      </main>
+
+      <aside class="aside">
+        <section id="selection-panel" class="selection-panel" aria-labelledby="selection-heading">
+          <div class="selection-panel-heading">
+            <h2 id="selection-heading">Selection layers</h2>
+            <span id="selection-count" class="selection-count">0 / 16</span>
+          </div>
+
+          <div class="interaction-mode" role="group" aria-label="Mol* interaction mode">
+            <button id="inspect-mode" type="button" aria-pressed="true" disabled>Inspect</button>
+            <button id="select-mode" type="button" aria-pressed="false" disabled>Select</button>
+          </div>
+          <!--
+            What one click in the 3D view picks up, which is Mol*'s own `Picking Level`
+            (`InteractivityManager.Params.granularity`). Three of its ten rows are offered and the
+            other seven are refused for one reason: a selection layer stores residues
+            (`normalizeResidues()` keys on chain + sequence id + insertion code), so Atom picks
+            below what a layer can hold and Operator and the three Instances rows name a symmetry
+            copy a layer cannot name either. Residue, Chain and Entity are each exactly what gets
+            saved. Model is one model in this tree, so it is Structure under another name.
+
+            Buttons, like the mode pair above them and for the same reason: `.app-shell`'s
+            capture-phase change/input listener marks the session dirty, records history and
+            retraces, and the picking level reaches none of those -- it is how the pointer behaves,
+            not part of the picture.
+          -->
+          <div id="picking-level" class="interaction-mode picking-level" role="group" aria-label="Picking level">
+            <button
+              type="button"
+              data-picking-level="residue"
+              aria-pressed="true"
+              title="A click in the 3D view picks one residue"
+              disabled
+            >Residue</button>
+            <button
+              type="button"
+              data-picking-level="chain"
+              aria-pressed="false"
+              title="A click in the 3D view picks the whole chain it lands on"
+              disabled
+            >Chain</button>
+            <button
+              type="button"
+              data-picking-level="entity"
+              aria-pressed="false"
+              title="A click in the 3D view picks every chain and every symmetry copy of that entity"
+              disabled
+            >Entity</button>
+          </div>
+
+          <p id="interaction-mode-status" class="interaction-mode-status">
+            Click the structure, or a residue in the sequence, to focus and inspect it.
+          </p>
+
+          <!--
+            Component shortcuts. The chain buttons below can only name a *polymer* chain, so
+            without these a ligand, an ion or a water has to be found in the 3D view one click at a
+            time — and "hide all the water" is a whole component, not a chain.
+
+            Same classes as the chain picker under it because it is the same control at a different
+            granularity: set on a plain click, add with Ctrl/Shift, and the same three pressed
+            states, so a partly selected component reads as `mixed` rather than claiming residues
+            that are not there. Only the components this structure actually has get a button.
+          -->
+          <section id="component-picker" class="chain-picker" aria-labelledby="component-heading" hidden>
+            <h3 id="component-heading">Select a component</h3>
+            <div id="component-shortcuts" class="chain-shortcuts"></div>
+          </section>
+
+          <section id="chain-picker" class="chain-picker" aria-labelledby="chain-heading" hidden>
+            <h3 id="chain-heading">Select a chain</h3>
+            <div id="chain-shortcuts" class="chain-shortcuts"></div>
+          </section>
+
+          <section class="current-selection" aria-labelledby="current-selection-heading">
+            <h3 id="current-selection-heading">Current selection</h3>
+            <p id="current-selection-status">Load a structure to begin selecting.</p>
+            <div class="current-selection-actions">
+              <button id="add-selection-layer" class="primary" type="button" disabled>
+                Create layer
+              </button>
+              <!-- Hiding is a selection layer that renders nothing, so this is Create layer with
+                   the flag already set. The layer it makes is an ordinary one: reorderable,
+                   editable, and brought back by its own eye button. -->
+              <button
+                id="hide-current-selection"
+                type="button"
+                title="Hide this selection in the render and the Mol* viewer"
+                disabled
+              >Hide</button>
+              <button id="clear-current-selection" type="button" disabled>Clear</button>
+            </div>
+          </section>
+
+          <p id="empty-selection-layers" class="empty-selection-layers">
+            No layers yet. Choose Select, pick part of the structure, then create a layer.
+          </p>
+          <div
+            id="selection-layers"
+            class="selection-layers"
+            aria-label="Styled selection layers"
+          ></div>
+          <p
+            id="selection-order-status"
+            class="selection-order-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+          <details class="selection-guide">
+            <summary>Tips for layers</summary>
+            <p>
+              Drag layers into order, or use their arrow buttons. When selections overlap, a lower
+              layer wins in the Mol* colour preview; the tracer still draws every matching layer.
+            </p>
+            <p>
+              One layer contains one component type: protein, nucleic acid, ligand, ion, or water.
+              Select as many separate residues or molecules of that type as needed, but split different
+              component types into separate layers.
+            </p>
+            <p>
+              Edit selection loads a layer into Mol*. Add or remove residues with the normal
+              selection tools, then use the same button — now Save selection — to update the layer
+              without changing its appearance.
+            </p>
+          </details>
+        </section>
+
+        <section class="render-dock" aria-labelledby="render-heading">
+          <h2 id="render-heading">Output image (render)</h2>
+          <p id="render-status" class="status render-status" role="status">
+            Load a structure to begin.
+          </p>
+          <div id="render-progress-region" class="render-progress-region" hidden>
+            <progress
+              id="render-progress"
+              aria-label="Sample progress"
+              max="100"
+              value="0"
+            ></progress>
+            <span id="render-progress-detail"></span>
+          </div>
+          <div class="render-actions">
+            <button id="render" class="primary render-button" type="button" disabled>Create Image</button>
+            <button id="cancel-render" type="button" disabled>Cancel</button>
+          </div>
+          <!--
+            There is no draft render. A draft is a second, cheaper job through a one-job path, and
+            there is no job path here: the trace is live and its quality ladder is resolution and
+            sample count on one accumulator. One path tracer makes the interactive frame and the
+            final picture; a second renderer would rebuild the Preview/Result gap this product
+            exists to close. A per-render quality override is threaded through the request builder,
+            never written into #render-width/#render-height/#render-samples, whose writes reach the
+            capture-phase listener on `.app-shell` and leave the user's own Output settings changed.
+          -->
+        </section>
+      </aside>
+    </div>
+    <!--
+      Result post-processing is session state, but it is not composition state. Keeping these
+      range inputs outside .app-shell prevents its capture-phase input/change listener from
+      recording eleven image-only controls in composition Undo/Redo. The panel is fixed and anchored
+      under #stage-post-process-toggle, so it cannot take a row from the live canvas.
+    -->
+    <section
+      id="post-process-panel"
+      class="post-process-panel"
+      aria-labelledby="post-process-heading"
+      aria-hidden="true"
+      inert
+    >
+      <div class="post-process-heading-row">
+        <div>
+          <h2 id="post-process-heading">Improve image</h2>
+          <p>Applied to this picture after the trace.</p>
+        </div>
+        <button id="post-process-close" type="button" aria-label="Close image improvements">×</button>
+      </div>
+      <div class="post-process-controls">
+        <label><span>Exposure</span><input id="post-process-exposure" data-post-process="exposure" type="range" min="-3" max="3" step="0.05" value="0" /><output for="post-process-exposure">0 EV</output></label>
+        <label><span>Highlights</span><input id="post-process-highlights" data-post-process="highlights" type="range" min="-100" max="100" step="1" value="0" /><output for="post-process-highlights">0</output></label>
+        <label><span>Shadows</span><input id="post-process-shadows" data-post-process="shadows" type="range" min="-100" max="100" step="1" value="0" /><output for="post-process-shadows">0</output></label>
+        <label><span>Contrast</span><input id="post-process-contrast" data-post-process="contrast" type="range" min="-100" max="100" step="1" value="0" /><output for="post-process-contrast">0</output></label>
+        <label><span>Warmth</span><input id="post-process-warmth" data-post-process="warmth" type="range" min="-100" max="100" step="1" value="0" /><output for="post-process-warmth">0</output></label>
+        <label><span>Saturation</span><input id="post-process-saturation" data-post-process="saturation" type="range" min="-100" max="100" step="1" value="0" /><output for="post-process-saturation">0</output></label>
+        <label><span>Brightness</span><input id="post-process-brightness" data-post-process="brightness" type="range" min="-100" max="100" step="1" value="0" /><output for="post-process-brightness">0</output></label>
+        <label><span>Sharpness</span><input id="post-process-sharpness" data-post-process="sharpness" type="range" min="0" max="100" step="1" value="0" /><output for="post-process-sharpness">0</output></label>
+        <label><span>Tint</span><input id="post-process-tint" data-post-process="tint" type="range" min="-100" max="100" step="1" value="0" /><output for="post-process-tint">0</output></label>
+        <label><span>Glow</span><input id="post-process-glow" data-post-process="glow" type="range" min="0" max="100" step="1" value="0" /><output for="post-process-glow">0</output></label>
+        <!--
+          Halo spreads light outward into what the render left transparent and never touches the
+          silhouette, so it needs margin around the structure to show at all: a frame filled
+          edge to edge has nowhere for it to go. See src/post-processing.js.
+        -->
+        <label><span>Halo</span><input id="post-process-halo" data-post-process="halo" type="range" min="0" max="100" step="1" value="0" /><output for="post-process-halo">0</output></label>
+      </div>
+      <!--
+        Improve image keeps its own back/forward rather than joining the top bar's ring. The eleven
+        sliders finish one PNG; the composition ring holds createRenderSnapshot() payloads and
+        restores the Mol* camera with them, so a shared timeline would reapply an image tweak to
+        whichever render happened to be on the stage. The stack is per result entry, so stepping
+        back always steps back through *this* picture's adjustments.
+      -->
+      <div class="post-process-actions">
+        <div class="post-process-history" role="group" aria-label="Image adjustment history">
+          <button
+            id="post-process-undo"
+            type="button"
+            aria-label="Undo image adjustment"
+            title="Undo the last image adjustment"
+            disabled
+          >&#x21b6;</button>
+          <button
+            id="post-process-redo"
+            type="button"
+            aria-label="Redo image adjustment"
+            title="Redo the image adjustment"
+            disabled
+          >&#x21b7;</button>
+        </div>
+        <button id="post-process-auto" class="primary" type="button">Auto improve</button>
+        <button id="post-process-reset" type="button">Reset</button>
+        <span id="post-process-status" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+    <!--
+      The window-wide drop guard: without it the browser navigates away from any file dropped
+      outside a drop zone. It is `position: fixed`, so it can never take a grid track from the
+      stage.
+    -->
+    <div id="window-drop-zone" class="launcher-drop is-active" hidden>
+      <p class="launcher-drop-label">Drop file to load</p>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,337 @@
+{
+ "blend": "autumn_meadow_scene.blend",
+ "world": "autumn_meadow",
+ "world_trees": {
+  "Shader Nodetree": {
+   "nodes": [
+    {
+     "name": "World Output",
+     "label": "",
+     "type": "ShaderNodeOutputWorld",
+     "inputs": {
+      "0:Surface": {
+       "value": null,
+       "linked": true
+      },
+      "1:Volume": {
+       "value": null,
+       "linked": false
+      }
+     },
+     "properties": {
+      "target": "ALL"
+     }
+    },
+    {
+     "name": "Group",
+     "label": "",
+     "type": "ShaderNodeGroup",
+     "inputs": {
+      "0:Rotation": {
+       "value": -304.2000427246094,
+       "linked": false
+      },
+      "1:Strength (EVs)": {
+       "value": 0.15000000596046448,
+       "linked": false
+      }
+     },
+     "properties": {},
+     "node_tree": "autumn_meadow"
+    }
+   ],
+   "links": [
+    {
+     "from_node": "Group",
+     "from_socket": "Background",
+     "to_node": "World Output",
+     "to_socket": "Surface"
+    }
+   ]
+  },
+  "autumn_meadow": {
+   "nodes": [
+    {
+     "name": "HDRIHandler_ShaderNodeMapping",
+     "label": "",
+     "type": "ShaderNodeMapping",
+     "inputs": {
+      "0:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      },
+      "1:Location": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "2:Rotation": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      },
+      "3:Scale": {
+       "value": [
+        1.0,
+        1.0,
+        1.0
+       ],
+       "linked": false
+      }
+     },
+     "properties": {
+      "vector_type": "POINT"
+     }
+    },
+    {
+     "name": "HDRIHandler_ShaderNodeTexCoord",
+     "label": "",
+     "type": "ShaderNodeTexCoord",
+     "inputs": {},
+     "properties": {}
+    },
+    {
+     "name": "Combine XYZ",
+     "label": "",
+     "type": "ShaderNodeCombineXYZ",
+     "inputs": {
+      "0:X": {
+       "value": 0.0,
+       "linked": false
+      },
+      "1:Y": {
+       "value": 0.0,
+       "linked": false
+      },
+      "2:Z": {
+       "value": 17.69999885559082,
+       "linked": true
+      }
+     },
+     "properties": {}
+    },
+    {
+     "name": "HDRIHandler_ShaderNodeTexEnvironment",
+     "label": "",
+     "type": "ShaderNodeTexEnvironment",
+     "inputs": {
+      "0:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      }
+     },
+     "properties": {
+      "interpolation": "Linear",
+      "projection": "EQUIRECTANGULAR"
+     },
+     "image": {
+      "name": "autumn_meadow_1k.hdr",
+      "size": [
+       1024,
+       512
+      ],
+      "colorspace": "Linear Rec.709",
+      "source": "FILE"
+     }
+    },
+    {
+     "name": "Math",
+     "label": "",
+     "type": "ShaderNodeMath",
+     "inputs": {
+      "0:Value": {
+       "value": 0.5,
+       "linked": true
+      },
+      "1:Value": {
+       "value": 0.01745299994945526,
+       "linked": false
+      },
+      "2:Value": {
+       "value": 0.5,
+       "linked": false
+      }
+     },
+     "properties": {
+      "operation": "MULTIPLY",
+      "use_clamp": false
+     }
+    },
+    {
+     "name": "HDRIHandler_ShaderNodeBackground",
+     "label": "",
+     "type": "ShaderNodeBackground",
+     "inputs": {
+      "0:Color": {
+       "value": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+       ],
+       "linked": true
+      },
+      "1:Strength": {
+       "value": 1.0,
+       "linked": true
+      },
+      "2:Weight": {
+       "value": 0.0,
+       "linked": false
+      }
+     },
+     "properties": {}
+    },
+    {
+     "name": "Group Output",
+     "label": "",
+     "type": "NodeGroupOutput",
+     "inputs": {
+      "0:Background": {
+       "value": null,
+       "linked": true
+      },
+      "1:": {
+       "value": null,
+       "linked": false
+      }
+     },
+     "properties": {}
+    },
+    {
+     "name": "Group Input",
+     "label": "",
+     "type": "NodeGroupInput",
+     "inputs": {},
+     "properties": {}
+    },
+    {
+     "name": "Math.001",
+     "label": "",
+     "type": "ShaderNodeMath",
+     "inputs": {
+      "0:Value": {
+       "value": 2.0,
+       "linked": false
+      },
+      "1:Value": {
+       "value": 0.5,
+       "linked": true
+      },
+      "2:Value": {
+       "value": 0.5,
+       "linked": false
+      }
+     },
+     "properties": {
+      "operation": "POWER",
+      "use_clamp": false
+     }
+    }
+   ],
+   "links": [
+    {
+     "from_node": "HDRIHandler_ShaderNodeBackground",
+     "from_socket": "Background",
+     "to_node": "Group Output",
+     "to_socket": "Background"
+    },
+    {
+     "from_node": "HDRIHandler_ShaderNodeTexCoord",
+     "from_socket": "Generated",
+     "to_node": "HDRIHandler_ShaderNodeMapping",
+     "to_socket": "Vector"
+    },
+    {
+     "from_node": "HDRIHandler_ShaderNodeMapping",
+     "from_socket": "Vector",
+     "to_node": "HDRIHandler_ShaderNodeTexEnvironment",
+     "to_socket": "Vector"
+    },
+    {
+     "from_node": "Combine XYZ",
+     "from_socket": "Vector",
+     "to_node": "HDRIHandler_ShaderNodeMapping",
+     "to_socket": "Rotation"
+    },
+    {
+     "from_node": "Math",
+     "from_socket": "Value",
+     "to_node": "Combine XYZ",
+     "to_socket": "Z"
+    },
+    {
+     "from_node": "Math.001",
+     "from_socket": "Value",
+     "to_node": "HDRIHandler_ShaderNodeBackground",
+     "to_socket": "Strength"
+    },
+    {
+     "from_node": "Group Input",
+     "from_socket": "Rotation",
+     "to_node": "Math",
+     "to_socket": "Value"
+    },
+    {
+     "from_node": "Group Input",
+     "from_socket": "Strength (EVs)",
+     "to_node": "Math.001",
+     "to_socket": "Value"
+    },
+    {
+     "from_node": "HDRIHandler_ShaderNodeTexEnvironment",
+     "from_socket": "Color",
+     "to_node": "HDRIHandler_ShaderNodeBackground",
+     "to_socket": "Color"
+    }
+   ]
+  }
+ },
+ "view_settings": {
+  "view_transform": "Filmic",
+  "look": "Very High Contrast",
+  "exposure": 0.0,
+  "gamma": 1.0,
+  "display_device": "sRGB"
+ },
+ "render": {
+  "engine": "CYCLES",
+  "resolution": [
+   1024,
+   1024
+  ],
+  "samples": 128,
+  "film_transparent": true
+ },
+ "custom_properties": {
+  "simple_renderer_lighting_preset": "base_hdri"
+ },
+ "environment": {
+  "node": "HDRIHandler_ShaderNodeTexEnvironment",
+  "image": "autumn_meadow_1k.hdr",
+  "original_size": [
+   1024,
+   512
+  ],
+  "colorspace": "Linear Rec.709",
+  "exported": "autumn_meadow_scene.hdr",
+  "exported_size": [
+   1024,
+   512
+  ]
+ }
+}

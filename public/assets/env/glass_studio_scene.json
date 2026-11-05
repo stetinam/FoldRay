@@ -1,0 +1,524 @@
+{
+ "blend": "glass_studio_scene.blend",
+ "world": "ProteinWorld",
+ "world_trees": {
+  "Shader Nodetree": {
+   "nodes": [
+    {
+     "name": "Texture Coordinate",
+     "label": "World-locked coordinates",
+     "type": "ShaderNodeTexCoord",
+     "inputs": {},
+     "properties": {}
+    },
+    {
+     "name": "Mapping",
+     "label": "Author HDRI rotation here",
+     "type": "ShaderNodeMapping",
+     "inputs": {
+      "0:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      },
+      "1:Location": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "2:Rotation": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "3:Scale": {
+       "value": [
+        1.0,
+        1.0,
+        1.0
+       ],
+       "linked": false
+      }
+     },
+     "properties": {
+      "vector_type": "POINT"
+     }
+    },
+    {
+     "name": "Environment Texture",
+     "label": "",
+     "type": "ShaderNodeTexEnvironment",
+     "inputs": {
+      "0:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      }
+     },
+     "properties": {
+      "interpolation": "Linear",
+      "projection": "EQUIRECTANGULAR"
+     },
+     "image": {
+      "name": "studio_small_08_1k.hdr",
+      "size": [
+       1024,
+       512
+      ],
+      "colorspace": "Linear Rec.709",
+      "source": "FILE"
+     }
+    },
+    {
+     "name": "Background",
+     "label": "Author World strength here",
+     "type": "ShaderNodeBackground",
+     "inputs": {
+      "0:Color": {
+       "value": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+       ],
+       "linked": true
+      },
+      "1:Strength": {
+       "value": 0.3799999952316284,
+       "linked": false
+      },
+      "2:Weight": {
+       "value": 0.0,
+       "linked": false
+      }
+     },
+     "properties": {}
+    },
+    {
+     "name": "World Output",
+     "label": "",
+     "type": "ShaderNodeOutputWorld",
+     "inputs": {
+      "0:Surface": {
+       "value": null,
+       "linked": true
+      },
+      "1:Volume": {
+       "value": null,
+       "linked": false
+      }
+     },
+     "properties": {
+      "target": "ALL"
+     }
+    },
+    {
+     "name": "SPR Glass Studio Direction",
+     "label": "",
+     "type": "ShaderNodeSeparateXYZ",
+     "inputs": {
+      "0:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": true
+      }
+     },
+     "properties": {}
+    },
+    {
+     "name": "SPR Glass Studio Direction Range",
+     "label": "",
+     "type": "ShaderNodeMapRange",
+     "inputs": {
+      "0:Value": {
+       "value": 1.0,
+       "linked": true
+      },
+      "1:From Min": {
+       "value": -1.0,
+       "linked": false
+      },
+      "2:From Max": {
+       "value": 1.0,
+       "linked": false
+      },
+      "3:To Min": {
+       "value": 0.0,
+       "linked": false
+      },
+      "4:To Max": {
+       "value": 1.0,
+       "linked": false
+      },
+      "5:Steps": {
+       "value": 4.0,
+       "linked": false
+      },
+      "6:Vector": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "7:From Min": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "8:From Max": {
+       "value": [
+        1.0,
+        1.0,
+        1.0
+       ],
+       "linked": false
+      },
+      "9:To Min": {
+       "value": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "linked": false
+      },
+      "10:To Max": {
+       "value": [
+        1.0,
+        1.0,
+        1.0
+       ],
+       "linked": false
+      },
+      "11:Steps": {
+       "value": [
+        4.0,
+        4.0,
+        4.0
+       ],
+       "linked": false
+      }
+     },
+     "properties": {
+      "clamp": true
+     }
+    },
+    {
+     "name": "SPR Glass Studio Panels",
+     "label": "Broad bright and dark panels for glass edges",
+     "type": "ShaderNodeValToRGB",
+     "inputs": {
+      "0:Fac": {
+       "value": 0.5,
+       "linked": true
+      }
+     },
+     "properties": {
+      "color_ramp": {
+       "interpolation": "EASE",
+       "elements": [
+        {
+         "position": 0.0,
+         "color": [
+          0.0020000000949949026,
+          0.004000000189989805,
+          0.00800000037997961,
+          1.0
+         ]
+        },
+        {
+         "position": 0.10000000149011612,
+         "color": [
+          0.0020000000949949026,
+          0.004000000189989805,
+          0.00800000037997961,
+          1.0
+         ]
+        },
+        {
+         "position": 0.18000000715255737,
+         "color": [
+          0.8199999928474426,
+          0.9200000166893005,
+          1.0,
+          1.0
+         ]
+        },
+        {
+         "position": 0.3400000035762787,
+         "color": [
+          0.8199999928474426,
+          0.9200000166893005,
+          1.0,
+          1.0
+         ]
+        },
+        {
+         "position": 0.41999998688697815,
+         "color": [
+          0.0020000000949949026,
+          0.004000000189989805,
+          0.00800000037997961,
+          1.0
+         ]
+        },
+        {
+         "position": 0.5799999833106995,
+         "color": [
+          0.0020000000949949026,
+          0.004000000189989805,
+          0.00800000037997961,
+          1.0
+         ]
+        },
+        {
+         "position": 0.6600000262260437,
+         "color": [
+          0.8199999928474426,
+          0.9200000166893005,
+          1.0,
+          1.0
+         ]
+        },
+        {
+         "position": 0.8199999928474426,
+         "color": [
+          0.8199999928474426,
+          0.9200000166893005,
+          1.0,
+          1.0
+         ]
+        },
+        {
+         "position": 0.8999999761581421,
+         "color": [
+          0.0020000000949949026,
+          0.004000000189989805,
+          0.00800000037997961,
+          1.0
+         ]
+        },
+        {
+         "position": 1.0,
+         "color": [
+          0.0020000000949949026,
+          0.004000000189989805,
+          0.00800000037997961,
+          1.0
+         ]
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "SPR Glass Studio Reflection Background",
+     "label": "Glossy and transmission panels",
+     "type": "ShaderNodeBackground",
+     "inputs": {
+      "0:Color": {
+       "value": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+       ],
+       "linked": true
+      },
+      "1:Strength": {
+       "value": 0.949999988079071,
+       "linked": false
+      },
+      "2:Weight": {
+       "value": 0.0,
+       "linked": false
+      }
+     },
+     "properties": {}
+    },
+    {
+     "name": "SPR Glass Studio Ray Selector",
+     "label": "",
+     "type": "ShaderNodeLightPath",
+     "inputs": {},
+     "properties": {}
+    },
+    {
+     "name": "SPR Glass Reflection Or Transmission",
+     "label": "",
+     "type": "ShaderNodeMath",
+     "inputs": {
+      "0:Value": {
+       "value": 0.5,
+       "linked": true
+      },
+      "1:Value": {
+       "value": 0.5,
+       "linked": true
+      },
+      "2:Value": {
+       "value": 0.5,
+       "linked": false
+      }
+     },
+     "properties": {
+      "operation": "MAXIMUM",
+      "use_clamp": false
+     }
+    },
+    {
+     "name": "SPR Glass Studio Illumination Split",
+     "label": "Neutral fill / glass edge panels",
+     "type": "ShaderNodeMixShader",
+     "inputs": {
+      "0:Fac": {
+       "value": 0.5,
+       "linked": true
+      },
+      "1:Shader": {
+       "value": null,
+       "linked": true
+      },
+      "2:Shader": {
+       "value": null,
+       "linked": true
+      }
+     },
+     "properties": {}
+    }
+   ],
+   "links": [
+    {
+     "from_node": "Texture Coordinate",
+     "from_socket": "Generated",
+     "to_node": "Mapping",
+     "to_socket": "Vector"
+    },
+    {
+     "from_node": "Mapping",
+     "from_socket": "Vector",
+     "to_node": "Environment Texture",
+     "to_socket": "Vector"
+    },
+    {
+     "from_node": "Environment Texture",
+     "from_socket": "Color",
+     "to_node": "Background",
+     "to_socket": "Color"
+    },
+    {
+     "from_node": "Mapping",
+     "from_socket": "Vector",
+     "to_node": "SPR Glass Studio Direction",
+     "to_socket": "Vector"
+    },
+    {
+     "from_node": "SPR Glass Studio Direction",
+     "from_socket": "X",
+     "to_node": "SPR Glass Studio Direction Range",
+     "to_socket": "Value"
+    },
+    {
+     "from_node": "SPR Glass Studio Direction Range",
+     "from_socket": "Result",
+     "to_node": "SPR Glass Studio Panels",
+     "to_socket": "Fac"
+    },
+    {
+     "from_node": "SPR Glass Studio Panels",
+     "from_socket": "Color",
+     "to_node": "SPR Glass Studio Reflection Background",
+     "to_socket": "Color"
+    },
+    {
+     "from_node": "SPR Glass Studio Ray Selector",
+     "from_socket": "Is Glossy Ray",
+     "to_node": "SPR Glass Reflection Or Transmission",
+     "to_socket": "Value"
+    },
+    {
+     "from_node": "SPR Glass Studio Ray Selector",
+     "from_socket": "Is Transmission Ray",
+     "to_node": "SPR Glass Reflection Or Transmission",
+     "to_socket": "Value"
+    },
+    {
+     "from_node": "SPR Glass Reflection Or Transmission",
+     "from_socket": "Value",
+     "to_node": "SPR Glass Studio Illumination Split",
+     "to_socket": "Fac"
+    },
+    {
+     "from_node": "Background",
+     "from_socket": "Background",
+     "to_node": "SPR Glass Studio Illumination Split",
+     "to_socket": "Shader"
+    },
+    {
+     "from_node": "SPR Glass Studio Reflection Background",
+     "from_socket": "Background",
+     "to_node": "SPR Glass Studio Illumination Split",
+     "to_socket": "Shader"
+    },
+    {
+     "from_node": "SPR Glass Studio Illumination Split",
+     "from_socket": "Shader",
+     "to_node": "World Output",
+     "to_socket": "Surface"
+    }
+   ]
+  }
+ },
+ "view_settings": {
+  "view_transform": "Filmic",
+  "look": "Very High Contrast",
+  "exposure": 0.0,
+  "gamma": 1.0,
+  "display_device": "sRGB"
+ },
+ "render": {
+  "engine": "CYCLES",
+  "resolution": [
+   1024,
+   1024
+  ],
+  "samples": 128,
+  "film_transparent": true
+ },
+ "custom_properties": {
+  "simple_renderer_lighting_preset": "base_hdri"
+ },
+ "environment": {
+  "node": "Environment Texture",
+  "image": "studio_small_08_1k.hdr",
+  "original_size": [
+   1024,
+   512
+  ],
+  "colorspace": "Linear Rec.709",
+  "exported": "glass_studio_scene.hdr",
+  "exported_size": [
+   1024,
+   512
+  ]
+ }
+}

@@ -1,0 +1,244 @@
+{
+ "blend": "diffuse.blend",
+ "materials": {
+  "SPR_Material_Diffuse": {
+   "custom_properties": {
+    "simple_renderer_material_template_version": "1",
+    "simple_renderer_material_id": "diffuse"
+   },
+   "blend_method": "HASHED",
+   "trees": {
+    "Shader Nodetree": {
+     "nodes": [
+      {
+       "name": "SPR User Color",
+       "label": "Browser protein colour",
+       "type": "ShaderNodeRGB",
+       "inputs": {},
+       "properties": {}
+      },
+      {
+       "name": "Material Output",
+       "label": "",
+       "type": "ShaderNodeOutputMaterial",
+       "inputs": {
+        "0:Surface": {
+         "value": null,
+         "linked": true
+        },
+        "1:Volume": {
+         "value": null,
+         "linked": false
+        },
+        "2:Displacement": {
+         "value": [
+          0.0,
+          0.0,
+          0.0
+         ],
+         "linked": false
+        },
+        "3:Thickness": {
+         "value": 0.0,
+         "linked": false
+        }
+       },
+       "properties": {
+        "target": "ALL"
+       }
+      },
+      {
+       "name": "Principled BSDF",
+       "label": "",
+       "type": "ShaderNodeBsdfPrincipled",
+       "inputs": {
+        "0:Base Color": {
+         "value": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+         ],
+         "linked": true
+        },
+        "1:Metallic": {
+         "value": 0.0,
+         "linked": false
+        },
+        "2:Roughness": {
+         "value": 0.699999988079071,
+         "linked": false
+        },
+        "3:IOR": {
+         "value": 1.5,
+         "linked": false
+        },
+        "4:Alpha": {
+         "value": 1.0,
+         "linked": false
+        },
+        "5:Normal": {
+         "value": [
+          0.0,
+          0.0,
+          0.0
+         ],
+         "linked": false
+        },
+        "6:Weight": {
+         "value": 0.0,
+         "linked": false
+        },
+        "7:Diffuse Roughness": {
+         "value": 0.1727272868156433,
+         "linked": false
+        },
+        "8:Subsurface Weight": {
+         "value": 0.0,
+         "linked": false
+        },
+        "9:Subsurface Radius": {
+         "value": [
+          1.0,
+          0.20000000298023224,
+          0.10000000149011612
+         ],
+         "linked": false
+        },
+        "10:Subsurface Scale": {
+         "value": 0.05000000074505806,
+         "linked": false
+        },
+        "11:Subsurface IOR": {
+         "value": 1.399999976158142,
+         "linked": false
+        },
+        "12:Subsurface Anisotropy": {
+         "value": 0.0,
+         "linked": false
+        },
+        "13:Specular IOR Level": {
+         "value": 0.5,
+         "linked": false
+        },
+        "14:Specular Tint": {
+         "value": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+         ],
+         "linked": false
+        },
+        "15:Anisotropic": {
+         "value": 0.0,
+         "linked": false
+        },
+        "16:Anisotropic Rotation": {
+         "value": 0.0,
+         "linked": false
+        },
+        "17:Tangent": {
+         "value": [
+          0.0,
+          0.0,
+          0.0
+         ],
+         "linked": false
+        },
+        "18:Transmission Weight": {
+         "value": 0.0,
+         "linked": false
+        },
+        "19:Coat Weight": {
+         "value": 0.0,
+         "linked": false
+        },
+        "20:Coat Roughness": {
+         "value": 0.029999999329447746,
+         "linked": false
+        },
+        "21:Coat IOR": {
+         "value": 1.5,
+         "linked": false
+        },
+        "22:Coat Tint": {
+         "value": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+         ],
+         "linked": false
+        },
+        "23:Coat Normal": {
+         "value": [
+          0.0,
+          0.0,
+          0.0
+         ],
+         "linked": false
+        },
+        "24:Sheen Weight": {
+         "value": 0.0,
+         "linked": false
+        },
+        "25:Sheen Roughness": {
+         "value": 0.5,
+         "linked": false
+        },
+        "26:Sheen Tint": {
+         "value": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+         ],
+         "linked": false
+        },
+        "27:Emission Color": {
+         "value": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+         ],
+         "linked": false
+        },
+        "28:Emission Strength": {
+         "value": 0.0,
+         "linked": false
+        },
+        "29:Thin Film Thickness": {
+         "value": 0.0,
+         "linked": false
+        },
+        "30:Thin Film IOR": {
+         "value": 1.3300000429153442,
+         "linked": false
+        }
+       },
+       "properties": {
+        "distribution": "MULTI_GGX"
+       }
+      }
+     ],
+     "links": [
+      {
+       "from_node": "SPR User Color",
+       "from_socket": "Color",
+       "to_node": "Principled BSDF",
+       "to_socket": "Base Color"
+      },
+      {
+       "from_node": "Principled BSDF",
+       "from_socket": "BSDF",
+       "to_node": "Material Output",
+       "to_socket": "Surface"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

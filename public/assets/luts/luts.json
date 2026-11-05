@@ -1,0 +1,23 @@
+{
+ "desat": {
+  "size": 33,
+  "file": "filmic_desat33.bin.gz"
+ },
+ "look_very_high_contrast": {
+  "length": 4096,
+  "domain": [
+   0.0,
+   1.0
+  ],
+  "file": "filmic_vhc.bin"
+ },
+ "log_allocation": {
+  "kind": "lg2",
+  "min": -12.473931188,
+  "max": 12.526068812
+ },
+ "uniform_allocation": {
+  "min": 0.0,
+  "max": 0.66
+ }
+}
