@@ -237,8 +237,8 @@ shipped it (MIT).
 
 ## Structures pictured in FoldRay
 
-The gallery tiles, and the line-up of thirteen renders on the opening screen, are FoldRay's own
-renders.
+The gallery tiles, the line-up of thirteen renders on the opening screen, and the README's examples
+are FoldRay's own renders.
 
 **PDB entries** (CC0 1.0): 10EC, 1AON, 1AYM, 1BNA, 1CLL, 1L2Y, 1N8Z, 1UBQ, 2GNS, 2YPI, 3ECA, 3INS,
 3RGK, 4BP7, 4HHB, 4HKR, 4R8P, 7CGO, 7LCK, 8PWW, 9CCE, 9HAF, 9UGA. Credit belongs to each entry's

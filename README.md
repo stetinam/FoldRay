@@ -13,10 +13,30 @@ power, but the result has real shadows, soft light, and realistic materials such
 which makes an enormous difference to the quality of a visualisation.
 
 Everything happens in your browser, on your computer. Your structures are never uploaded, so they
-stay private. FoldRay only goes online to fetch a structure you asked for by ID.
+stay private.
 
 The [guide](https://www.foldray.org/home/#guide) covers everything, from loading a structure to the
 final picture.
+
+## Examples
+
+<p>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/3ins-cords.webp" alt="Insulin, neon cords (3INS)" title="Insulin, neon cords (3INS)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/3ins-glass.webp" alt="Insulin, glass ribbon (3INS)" title="Insulin, glass ribbon (3INS)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/3ins-surface.webp" alt="Insulin, cartoon cloud (3INS)" title="Insulin, cartoon cloud (3INS)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/2ypi.webp" alt="Triosephosphate isomerase (2YPI)" title="Triosephosphate isomerase (2YPI)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/9cce.webp" alt="DYNA_1b7 (9CCE)" title="DYNA_1b7 (9CCE)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/1cll.webp" alt="Calmodulin (1CLL)" title="Calmodulin (1CLL)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/gfp.webp" alt="Green fluorescent protein (P42212)" title="Green fluorescent protein (P42212)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/3eca.webp" alt="L-Asparaginase (3ECA)" title="L-Asparaginase (3ECA)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/4hkr.webp" alt="Orai channel (4HKR)" title="Orai channel (4HKR)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/4r8p.webp" alt="PRC1 on the nucleosome (4R8P)" title="PRC1 on the nucleosome (4R8P)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/9uga.webp" alt="SARM1 (9UGA)" title="SARM1 (9UGA)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/4bp7.webp" alt="Bacteriophage capsid (4BP7)" title="Bacteriophage capsid (4BP7)" height="140"></a>
+<a href="https://www.foldray.org/home/#gallery"><img src="docs/examples/7cgo-lay.webp" alt="Flagellar motor-hook complex (7CGO)" title="Flagellar motor-hook complex (7CGO)" height="140"></a>
+</p>
+
+Rendered in FoldRay. The structures are credited in `docs/attributions.md`.
 
 ## What you need
 
@@ -67,7 +87,8 @@ the environment maps in `public/assets/env/` (CC0), the Filmic tables in `public
 Sobotka), and a few shader functions adapted from Cycles, three.js and Filament, noted in their
 comments.
 
-The FoldRay logo is not covered by the MIT licence, © 2026 Max Stetina.
+The FoldRay logo and the example pictures in `docs/examples/` are not covered by the MIT licence,
+© 2026 Max Stetina.
 
 FoldRay was inspired by the stunning protein visualisations that Blender and Cycles can produce,
 particularly with representations from Molecular Nodes (a Blender addon by Brady Johnston) or PyMOL.
