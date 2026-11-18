@@ -260,6 +260,12 @@ representation, camera, lighting, materials and colour. Please cite: Jumper et a
 
 ---
 
+## Logo
+
+The FoldRay logo is by Amélie Eberhardová and Max Stetina.
+
+---
+
 ## Build tools
 
 Vite ("Copyright (c) 2019-present, VoidZero Inc. and Vite contributors") and Rolldown ("Copyright (c)

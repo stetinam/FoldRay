@@ -64,12 +64,13 @@ import { APP_CHANNEL, APP_VERSION } from './version.js';
 export const SMALL_SCREEN_MIN_WIDTH = 1124;
 
 /*
-  The website's hero in miniature, above the one decision: its wordmark and its line-up as flat
+  The website's hero in miniature, above the one decision: its logo, wordmark and line-up as flat
   pictures (made from the site's own files) and three ways
   to the site. Links, not buttons, and in this tab: nothing is loaded while this screen is open.
 */
 const WORDMARK_URL = new URL('./opening/wordmark.svg', import.meta.url).href;
 const LINEUP_URL = new URL('./opening/lineup.webp', import.meta.url).href;
+const LOGO_URL = new URL('./opening/logo.webp', import.meta.url).href;
 export const SITE_LINKS = [
   ['Home', '/home/'],
   ['Examples', '/home/#gallery'],
@@ -220,10 +221,15 @@ export function initOpeningScreen({
   const hero = el('div', 'opening-screen-hero');
   const wordmarkLink = el('a', 'opening-screen-wordmark');
   wordmarkLink.href = SITE_LINKS[0][1];
+  const logo = el('img', 'opening-screen-logo');
+  logo.src = LOGO_URL;
+  logo.alt = '';
+  logo.width = 58;
+  logo.height = 46;
   const wordmark = el('img');
   wordmark.src = WORDMARK_URL;
   wordmark.alt = 'FoldRay';
-  wordmarkLink.append(wordmark);
+  wordmarkLink.append(logo, wordmark);
   // Sized in the markup, so the panel does not jump when the picture arrives.
   const lineup = el('img', 'opening-screen-lineup');
   lineup.src = LINEUP_URL;

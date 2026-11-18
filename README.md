@@ -1,3 +1,5 @@
+<img src="src/opening/logo.webp" alt="FoldRay logo" height="80">
+
 # FoldRay
 
 **Stunning protein visualisations made easy, in your browser.**
@@ -66,6 +68,8 @@ credited in `docs/attributions.md` and on the website's
 the environment maps in `public/assets/env/` (CC0), the Filmic tables in `public/assets/luts/` (Troy
 Sobotka), and a few shader functions adapted from Cycles, three.js and Filament, noted in their
 comments.
+
+The FoldRay logo is not covered by the MIT licence, © 2026 Max Stetina.
 
 FoldRay was inspired by the stunning protein visualisations that Blender and Cycles can produce,
 particularly with representations from Molecular Nodes (a Blender addon by Brady Johnston) or PyMOL.

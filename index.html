@@ -8,8 +8,8 @@
       beacon, which the host injects and which reports to this origin's `/cdn-cgi/rum`. The page
       fetches only from itself and the two archives it downloads structures from, so a session
       document can name no other host.
-      `blob:` is the renders, shown and read back by `fetch()`; `data:` is the favicon and Mol*'s
-      built-in textures. The host's headers send the same policy plus `frame-ancestors`, which a
+      `blob:` is the renders, shown and read back by `fetch()`; `data:` is Mol*'s built-in
+      textures. The host's headers send the same policy plus `frame-ancestors`, which a
       meta element cannot carry; the browser enforces both.
     -->
     <meta
@@ -17,7 +17,9 @@
       content="default-src 'none'; script-src 'self' https://static.cloudflareinsights.com; worker-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' blob: https://files.rcsb.org https://alphafold.ebi.ac.uk; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <meta name="referrer" content="no-referrer" />
-    <link rel="icon" href="data:," />
+    <link rel="icon" type="image/png" sizes="16x16" href="/src/opening/icon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/src/opening/icon-32.png" />
+    <link rel="apple-touch-icon" href="/src/opening/icon-180.png" />
     <!--
       The sheet is linked here rather than imported from `src/main.js`. Vite processes a
       `<link rel="stylesheet">` in the entry HTML exactly as it processes the import, and one route
@@ -31,7 +33,7 @@
       <header class="topbar">
         <div class="topbar-app">
           <a class="brand" href="/home/" title="The FoldRay website">
-            <span class="brand-mark" aria-hidden="true"></span>
+            <img class="brand-mark" src="/src/opening/logo.webp" alt="" width="25" height="20" />
             <span class="brand-wordmark" role="img" aria-label="FoldRay"></span>
             <span id="app-version" class="brand-version"></span>
           </a>

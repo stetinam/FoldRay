@@ -378,13 +378,9 @@ summary::-webkit-details-marker {
 }
 
 .brand-mark {
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  background:
-    radial-gradient(circle at 32% 33%, #a8f6e8 0 26%, transparent 27%),
-    radial-gradient(circle at 66% 62%, #5fe8cd 0 22%, transparent 23%),
-    linear-gradient(150deg, #1d8a78, #0e4a41);
+  flex: none;
+  width: auto;
+  height: 20px;
 }
 
 /* The website's wordmark, the opening screen's own file, as a mask so it takes the bar's colours. */
@@ -5338,9 +5334,11 @@ button.chain-shortcut[aria-pressed="mixed"] {
   border-bottom: 1px solid rgb(255 255 255 / 16%);
 }
 
+/* The line-up sits 8px below the brand, the room taken from the drop zone's padding. */
 .opening-screen-art {
   position: relative;
   align-self: end;
+  padding-top: 8px;
 }
 
 .opening-screen-lineup {
@@ -5350,20 +5348,30 @@ button.chain-shortcut[aria-pressed="mixed"] {
 }
 
 .opening-screen-brand {
+  --logo: 46px;
+  --word: 124px;
+  --gap: 8px;
   position: absolute;
-  top: 6px;
+  top: 2px;
   left: 6px;
   display: grid;
   justify-items: start;
   gap: 4px;
 }
 
+/* The logo larger than the word, whose capitals (683 of its 2327 units across) are centred on it;
+   the brand sits 2px down so the word's y stays clear of the line-up under it. */
 .opening-screen-wordmark {
-  display: block;
-  width: 138px;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap);
 }
 
+/* Under the word, from its F, and up into the y's descent (185 of 2327 units), which it is too
+   short to reach: its box 5px below the baseline. */
 .opening-screen-version {
+  margin-top: calc(1px - var(--word) * 185 / 2327);
+  margin-left: calc(var(--logo) * 980 / 780 + var(--gap));
   color: var(--ink-3);
   font-size: 10.5px;
   letter-spacing: 0.02em;
@@ -5371,17 +5379,24 @@ button.chain-shortcut[aria-pressed="mixed"] {
 
 .opening-screen-wordmark img {
   display: block;
-  width: 100%;
+  width: var(--word);
   height: auto;
+  margin-top: calc((var(--logo) - var(--word) * 683 / 2327) / 2);
 }
 
-/* From the top, level with the wordmark and the tower's top. */
+.opening-screen-wordmark .opening-screen-logo {
+  width: auto;
+  height: var(--logo);
+  margin-top: 0;
+}
+
+/* Centred between the logo's top and the line-up's foot. */
 .opening-screen-site {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 8px;
-  padding-top: 6px;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 2px;
 }
 
 .opening-screen-site a {
@@ -5463,7 +5478,7 @@ button.chain-shortcut[aria-pressed="mixed"] {
   display: grid;
   gap: 10px;
   justify-items: center;
-  padding: 22px 16px;
+  padding: 18px 16px;
   border: 1px dashed #3b4353;
   border-radius: 10px;
   background: var(--panel-2);
