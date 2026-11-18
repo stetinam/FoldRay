@@ -1,6 +1,4 @@
-<img src="src/opening/logo.webp" alt="FoldRay logo" height="80">
-
-# FoldRay
+# <img src="src/opening/logo.webp" alt="" height="48" align="absmiddle"> FoldRay
 
 **Stunning protein visualisations made easy, in your browser.**
 
